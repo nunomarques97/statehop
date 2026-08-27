@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Statehop.App/Statehop.App.csproj" />
+    <Project Path="src/Statehop.Core/Statehop.Core.csproj" />
+    <Project Path="src/Statehop.Observation/Statehop.Observation.csproj" />
+    <Project Path="src/Statehop.Storage/Statehop.Storage.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Statehop.Tests/Statehop.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Statehop.App (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "Statehop.App (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
