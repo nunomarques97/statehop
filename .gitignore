@@ -1,0 +1,21 @@
+# .NET / Visual Studio
+bin/
+obj/
+*.user
+.vs/
+
+# WinUI / MSIX packaging
+AppPackages/
+BundleArtifacts/
+*.appx
+*.appxupload
+*.msix
+
+# SQLite local data (never commit real activity data)
+*.db
+*.db-shm
+*.db-wal
+
+# OS
+Thumbs.db
+Desktop.ini
