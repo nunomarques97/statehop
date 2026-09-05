@@ -11,6 +11,18 @@
     </application>
   </compatibility>
   
+  <!-- Statehop must never ask for Administrator. Stated
+       explicitly rather than left to the default, because losing this line
+       would silently change the product's trust posture. The consequence is
+       measured as B0.2: some elevated apps stay partly invisible. -->
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
+    <security>
+      <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
+        <requestedExecutionLevel level="asInvoker" uiAccess="false" />
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+
   <application xmlns="urn:schemas-microsoft-com:asm.v3">
     <windowsSettings>
       <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2</dpiAwareness>

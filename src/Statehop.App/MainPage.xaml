@@ -5,14 +5,228 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:Statehop.App"
+    xmlns:services="using:Statehop.App.Services"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <!--
-        This is the main content area of your application.
-        Add your UI elements here — for example, controls, layouts, and data-bound views.
-        Use 'dotnet new winui-page' to create additional pages and navigate to them via
-        the Frame in MainWindow (RootFrame).
-    -->
-    <Grid />
+    <Page.Resources>
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="16,12" />
+        </Style>
+        <Style x:Key="CardLabelStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        </Style>
+        <Style x:Key="CardValueStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            <Setter Property="Margin" Value="0,2,0,0" />
+        </Style>
+        <Style x:Key="SectionHeaderStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,8,0,0" />
+        </Style>
+    </Page.Resources>
+
+    <ScrollViewer Padding="24,8,24,24">
+        <StackPanel Spacing="12">
+
+            <StackPanel Spacing="2">
+                <TextBlock Text="Observação em curso" FontSize="24" FontWeight="SemiBold" />
+                <TextBlock
+                    Style="{StaticResource CardLabelStyle}"
+                    Text="Phase 0 — spike técnico. A app continua a observar quando esta janela fecha; sair só pelo menu da área de notificações." />
+            </StackPanel>
+
+            <!-- Shown only when the process is elevated, because that quietly
+                 invalidates two of the things this page reports. -->
+            <Border
+                x:Name="PrivilegeWarning"
+                Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+                BorderBrush="{ThemeResource SystemFillColorCautionBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="16,12"
+                Visibility="Collapsed">
+                <StackPanel Spacing="4">
+                    <TextBlock
+                        FontWeight="SemiBold"
+                        Text="A correr com privilégios elevados" />
+                    <TextBlock
+                        x:Name="PrivilegeWarningDetail"
+                        TextWrapping="Wrap"
+                        Text="" />
+                </StackPanel>
+            </Border>
+
+            <!-- Live state -->
+            <Grid ColumnSpacing="12" RowSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Style="{StaticResource CardStyle}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardLabelStyle}" Text="Em primeiro plano" />
+                        <TextBlock x:Name="ForegroundValue" Style="{StaticResource CardValueStyle}" Text="—" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Style="{StaticResource CardStyle}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardLabelStyle}" Text="Input do utilizador" />
+                        <TextBlock x:Name="IdleValue" Style="{StaticResource CardValueStyle}" Text="—" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Style="{StaticResource CardStyle}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardLabelStyle}" Text="Processos no último varrimento" />
+                        <TextBlock x:Name="ProcessesValue" Style="{StaticResource CardValueStyle}" Text="—" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Capabilities the spike had to prove -->
+            <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Capacidades verificadas" />
+            <Grid ColumnSpacing="12" RowSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Style="{StaticResource CardStyle}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardLabelStyle}" Text="Hotkey global" />
+                        <TextBlock x:Name="HotkeyValue" Style="{StaticResource CardValueStyle}" Text="—" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Style="{StaticResource CardStyle}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardLabelStyle}" Text="Arranque com o Windows" />
+                        <TextBlock x:Name="StartupValue" Style="{StaticResource CardValueStyle}" Text="—" />
+                        <ToggleSwitch
+                            x:Name="StartupToggle"
+                            Margin="0,4,0,0"
+                            OffContent="Desligado"
+                            OnContent="Ligado"
+                            Toggled="OnStartupToggled" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Style="{StaticResource CardStyle}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardLabelStyle}" Text="Notificações locais" />
+                        <TextBlock x:Name="NotificationValue" Style="{StaticResource CardValueStyle}" Text="—" />
+                        <Button
+                            Margin="0,8,0,0"
+                            Click="OnTestNotification"
+                            Content="Testar notificação" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- B0.2 -->
+            <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="B0.2 — apps invisíveis a um observador não elevado" />
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="6">
+                    <TextBlock x:Name="ElevatedHeadline" Style="{StaticResource CardValueStyle}" Text="—" />
+                    <TextBlock
+                        x:Name="ElevatedDetail"
+                        Style="{StaticResource CardLabelStyle}"
+                        TextWrapping="Wrap"
+                        Text="—" />
+                    <TextBlock
+                        Style="{StaticResource CardLabelStyle}"
+                        TextWrapping="Wrap"
+                        Text="Conta apenas processos que têm janela visível. Processos SYSTEM/protegidos ficam de fora: são inacessíveis a qualquer app não elevada, packaged ou não (ADR 001)." />
+                </StackPanel>
+            </Border>
+
+            <!-- Storage -->
+            <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Dados guardados (só nesta máquina)" />
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="6">
+                    <TextBlock x:Name="StatsValue" Style="{StaticResource CardValueStyle}" Text="—" />
+                    <TextBlock
+                        x:Name="DatabasePathValue"
+                        Style="{StaticResource CardLabelStyle}"
+                        IsTextSelectionEnabled="True"
+                        TextWrapping="Wrap"
+                        Text="—" />
+                    <TextBlock
+                        Style="{StaticResource CardLabelStyle}"
+                        TextWrapping="Wrap"
+                        Text="Guardado: identidade do processo (nome e caminho do executável) e timestamps. Nunca guardado: títulos de janela, conteúdo, URLs. Nada sai desta máquina." />
+                    <StackPanel Margin="0,4,0,0" Orientation="Horizontal" Spacing="8">
+                        <Button Click="OnExportReport" Content="Exportar relatório do gate" />
+                        <TextBlock
+                            x:Name="ExportStatus"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource CardLabelStyle}"
+                            IsTextSelectionEnabled="True"
+                            Text="" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Reliability -->
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="4">
+                    <TextBlock Style="{StaticResource CardLabelStyle}" Text="Fiabilidade desta sessão" />
+                    <TextBlock x:Name="ReliabilityValue" Style="{StaticResource CardValueStyle}" Text="—" />
+                    <TextBlock
+                        x:Name="LastErrorValue"
+                        Style="{StaticResource CardLabelStyle}"
+                        TextWrapping="Wrap"
+                        Visibility="Collapsed" />
+                </StackPanel>
+            </Border>
+
+            <!-- Feed -->
+            <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Eventos recentes" />
+            <Border Style="{StaticResource CardStyle}">
+                <ListView
+                    x:Name="ActivityList"
+                    MaxHeight="260"
+                    SelectionMode="None">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="services:ActivityLine">
+                            <Grid ColumnSpacing="12" Padding="0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="72" />
+                                    <ColumnDefinition Width="96" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    Grid.Column="0"
+                                    FontFamily="Consolas"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Text="{x:Bind TimeText}" />
+                                <TextBlock
+                                    Grid.Column="1"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Text="{x:Bind Kind}" />
+                                <TextBlock
+                                    Grid.Column="2"
+                                    TextTrimming="CharacterEllipsis"
+                                    Text="{x:Bind Description}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
 </Page>

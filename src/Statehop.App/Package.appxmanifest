@@ -1,11 +1,13 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap rescap">
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
+  IgnorableNamespaces="uap rescap desktop com">
 
   <Identity
     Name="1FBD8FF0-6133-4D7F-A14D-AF5A8231210C"
@@ -42,6 +44,49 @@
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
       </uap:VisualElements>
+
+      <!--
+        Start with Windows. For a packaged (MSIX) app the classic mechanisms -
+        the HKCU Run key and the Startup folder - do not work; StartupTask is
+        the supported model (docs/adr/001-packaging.md).
+
+        Enabled="false" on purpose: the app ships not starting itself. The user
+        turns it on from the tray menu, which calls RequestEnableAsync, and can
+        turn it off again in Task Manager's Startup tab like any other app.
+      -->
+      <Extensions>
+        <desktop:Extension
+          Category="windows.startupTask"
+          Executable="Statehop.App.exe"
+          EntryPoint="Windows.FullTrustApplication">
+          <desktop:StartupTask
+            TaskId="StatehopStartupTask"
+            Enabled="false"
+            DisplayName="Statehop" />
+        </desktop:Extension>
+
+        <!--
+          Local notifications. A packaged app has to name the COM class Windows
+          activates when a notification is clicked, and register that class as
+          an out-of-process server pointing at this executable; without both,
+          AppNotificationManager.Show is refused and nothing appears on screen.
+          The two GUIDs must stay identical.
+        -->
+        <desktop:Extension Category="windows.toastNotificationActivation">
+          <desktop:ToastNotificationActivation ToastActivatorCLSID="9C0E1C7A-5B44-4E2D-9E1B-6A3F2D8C41A7" />
+        </desktop:Extension>
+
+        <com:Extension Category="windows.comServer">
+          <com:ComServer>
+            <com:ExeServer
+              Executable="Statehop.App.exe"
+              DisplayName="Statehop"
+              Arguments="----AppNotificationActivated:">
+              <com:Class Id="9C0E1C7A-5B44-4E2D-9E1B-6A3F2D8C41A7" />
+            </com:ExeServer>
+          </com:ComServer>
+        </com:Extension>
+      </Extensions>
     </Application>
   </Applications>
 

@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Statehop.Core\Statehop.Core.csproj" />
+    <ProjectReference Include="..\..\src\Statehop.Storage\Statehop.Storage.csproj" />
   </ItemGroup>
 
 </Project>
