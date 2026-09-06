@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="pt-PT" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<title>Statehop — Direção A, Faixa do Dia</title>
+<style>
+  /* ---- Direção A — "Faixa do Dia" -------------------------------------
+     Uma única faixa horizontal de 24 h é o herói. Tudo o resto serve para
+     a explicar. Pensada para a resposta de dez segundos.               */
+
+  :root {
+    --surface:        #f9f9f9;   /* fundo da janela (Mica claro)        */
+    --layer:          #ffffff;   /* cartões                             */
+    --layer-alt:      #f3f3f3;   /* sulcos, faixas de fundo             */
+    --stroke:         #e5e5e5;
+    --stroke-strong:  #d2d2d2;
+    --text:           #1b1b1b;
+    --text-2:         #5d5d5d;
+    --text-3:         #8a8a8a;
+    --accent:         #0f6cbd;   /* marcador de "agora"                 */
+
+    /* Paleta categórica dessaturada: distingue apps sem gritar. */
+    --app-code:   #3f6b8a;
+    --app-web:    #4f8a7b;
+    --app-term:   #7c6aa8;
+    --app-chat:   #a8794f;
+    --app-play:   #96566b;
+    --app-os:     #7a8290;
+    --idle:       #dcdcdc;
+
+    --r-sm: 4px; --r-md: 6px; --r-lg: 8px;
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px;
+  }
+
+  [data-theme="dark"] {
+    --surface: #1f1f1f; --layer: #2b2b2b; --layer-alt: #262626;
+    --stroke: #383838; --stroke-strong: #4a4a4a;
+    --text: #f2f2f2; --text-2: #b8b8b8; --text-3: #8a8a8a;
+    --accent: #4cc2ff;
+    --app-code: #6a9ec0; --app-web: #6fb8a5; --app-term: #a394d0;
+    --app-chat: #cfa274; --app-play: #c98098; --app-os: #98a2b2;
+    --idle: #3a3a3a;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--surface);
+    color: var(--text);
+    font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .window { width: 1180px; height: 820px; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ---- barra de título nativa ---- */
+  .titlebar {
+    height: 32px; flex: 0 0 32px; display: flex; align-items: center;
+    padding-left: var(--s3); gap: var(--s2); user-select: none;
+  }
+  .titlebar .mark { width: 16px; height: 16px; border-radius: var(--r-sm); background: var(--accent); }
+  .titlebar .name { font-size: 12px; color: var(--text-2); }
+  .titlebar .caption { margin-left: auto; display: flex; }
+  .titlebar .caption span {
+    width: 46px; height: 32px; display: grid; place-items: center;
+    color: var(--text-2); font-size: 10px; font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets", sans-serif;
+  }
+
+  main { flex: 1; padding: var(--s2) var(--s6) 0; overflow: hidden; display: flex; flex-direction: column; }
+
+  h1 {
+    font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif;
+    font-size: 28px; font-weight: 600; margin: 0 0 2px; letter-spacing: -0.01em;
+  }
+  .sub { color: var(--text-2); font-size: 13px; margin: 0 0 var(--s5); }
+
+  /* ---- O elemento assinatura: a faixa do dia ---- */
+  .ribbon-card {
+    background: var(--layer); border: 1px solid var(--stroke);
+    border-radius: var(--r-lg); padding: var(--s5) var(--s5) var(--s4);
+    margin-bottom: var(--s5);
+  }
+  .ribbon-head { display: flex; align-items: baseline; margin-bottom: var(--s4); }
+  .ribbon-head .total { font-size: 20px; font-weight: 600; }
+  .ribbon-head .total small { font-weight: 400; color: var(--text-2); font-size: 13px; margin-left: 6px; }
+  .ribbon-head .range { margin-left: auto; color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+  .ribbon-wrap { position: relative; }
+  .ribbon {
+    display: flex; height: 56px; border-radius: var(--r-md); overflow: hidden;
+    background: var(--layer-alt);
+  }
+  .seg { position: relative; }
+  .seg[data-idle] { background: var(--idle); }
+
+  /* marcador de agora */
+  .now { position: absolute; top: -6px; bottom: -6px; width: 2px; background: var(--accent); }
+  .now::after {
+    content: "agora"; position: absolute; bottom: -17px; right: 0;
+    font-size: 11px; color: var(--accent); font-weight: 600;
+  }
+
+  .axis { display: flex; margin-top: var(--s2); color: var(--text-3); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .axis span { flex: 1; }
+  .axis span:last-child { flex: 0; }
+
+  /* ---- blocos legíveis ---- */
+  .blocks-head { display: flex; align-items: baseline; margin-bottom: var(--s3); }
+  .blocks-head h2 { font-size: 14px; font-weight: 600; margin: 0; }
+  .blocks-head .hint { margin-left: auto; color: var(--text-3); font-size: 12px; }
+
+  .blocks { display: flex; flex-direction: column; gap: 1px; background: var(--stroke);
+            border: 1px solid var(--stroke); border-radius: var(--r-lg); overflow: hidden; }
+  .block { display: grid; grid-template-columns: 92px 10px 1fr 88px; align-items: center;
+           gap: var(--s3); padding: 11px var(--s4); background: var(--layer); }
+  .block .when { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .block .swatch { width: 10px; height: 10px; border-radius: 3px; }
+  .block .what { font-size: 14px; }
+  .block .what em { font-style: normal; color: var(--text-2); }
+  .block .dur { text-align: right; font-variant-numeric: tabular-nums; color: var(--text); }
+  .block.quiet { background: var(--layer-alt); }
+  .block.quiet .what { color: var(--text-2); }
+
+  .apps { margin-top: var(--s5); }
+  .apps h2 { font-size: 14px; font-weight: 600; margin: 0 0 var(--s3); }
+  .apps .cols { display: grid; grid-template-columns: 1fr 1fr; column-gap: var(--s6); }
+  .apps .row { display: grid; grid-template-columns: 10px 1fr auto; gap: var(--s3);
+               align-items: center; padding: 7px 0; border-bottom: 1px solid var(--stroke); }
+  .apps .row:last-child { border-bottom: none; }
+  .apps .row .sw { width: 10px; height: 10px; border-radius: 3px; }
+  .apps .row .t { font-variant-numeric: tabular-nums; color: var(--text-2); }
+
+  /* ---- afordância discreta para o diagnóstico ---- */
+  .statusbar {
+    flex: 0 0 34px; display: flex; align-items: center; gap: var(--s4);
+    padding: 0 var(--s6); border-top: 1px solid var(--stroke);
+    color: var(--text-3); font-size: 12px; background: var(--surface);
+  }
+  .statusbar .dot { width: 6px; height: 6px; border-radius: 50%; background: #6aa84f; }
+  [data-theme="dark"] .statusbar .dot { background: #6ccb5f; }
+  .statusbar .right { margin-left: auto; display: flex; gap: var(--s4); align-items: center; }
+  .statusbar button {
+    font: inherit; color: var(--text-2); background: none; border: none; cursor: pointer;
+    padding: 4px 8px; border-radius: var(--r-sm);
+  }
+  .statusbar button:hover { background: var(--layer-alt); color: var(--text); }
+</style>
+</head>
+<body>
+<div class="window">
+
+  <div class="titlebar">
+    <div class="mark"></div><div class="name">Statehop</div>
+    <div class="caption"><span>&#xE921;</span><span>&#xE922;</span><span>&#xE8BB;</span></div>
+  </div>
+
+  <main>
+    <h1>Hoje</h1>
+    <p class="sub">Sábado, 6 de setembro</p>
+
+    <section class="ribbon-card">
+      <div class="ribbon-head">
+        <div class="total">7 h 56 m <small>ao computador</small></div>
+        <div class="range">13:15 &ndash; 21:11</div>
+      </div>
+
+      <div class="ribbon-wrap" style="padding-bottom:4px">
+        <div class="ribbon">
+          <div class="seg" style="flex:118; background:var(--app-code)"></div>
+          <div class="seg" style="flex:34;  background:var(--app-web)"></div>
+          <div class="seg" style="flex:52; background:var(--app-term)"></div>
+          <div class="seg" style="flex:26;  background:var(--app-code)"></div>
+          <div class="seg" data-idle style="flex:95"></div>
+          <div class="seg" style="flex:63;  background:var(--app-play)"></div>
+          <div class="seg" style="flex:21;  background:var(--app-web)"></div>
+          <div class="seg" style="flex:48;  background:var(--app-code)"></div>
+          <div class="seg" style="flex:19;  background:var(--app-chat)"></div>
+        </div>
+        <div class="now" style="left: 96%"></div>
+      </div>
+
+      <div class="axis">
+        <span>13:00</span><span>15:00</span><span>17:00</span><span>19:00</span><span>21:00</span>
+      </div>
+    </section>
+
+    <div class="blocks-head">
+      <h2>Blocos do dia</h2>
+      <div class="hint">Agrupa trocas curtas de foco. 6 blocos.</div>
+    </div>
+
+    <div class="blocks">
+      <div class="block">
+        <div class="when">13:15 &ndash; 15:02</div>
+        <div class="swatch" style="background:var(--app-code)"></div>
+        <div class="what">Visual Studio Code <em>&middot; com Chrome e Terminal</em></div>
+        <div class="dur">1 h 47 m</div>
+      </div>
+      <div class="block">
+        <div class="when">15:02 &ndash; 15:54</div>
+        <div class="swatch" style="background:var(--app-term)"></div>
+        <div class="what">Windows Terminal <em>&middot; com Visual Studio Code</em></div>
+        <div class="dur">52 m</div>
+      </div>
+      <div class="block quiet">
+        <div class="when">16:12 &ndash; 17:47</div>
+        <div class="swatch" style="background:var(--idle)"></div>
+        <div class="what">Sem utilização <em>&middot; ecrã bloqueado</em></div>
+        <div class="dur">1 h 35 m</div>
+      </div>
+      <div class="block">
+        <div class="when">17:47 &ndash; 18:50</div>
+        <div class="swatch" style="background:var(--app-play)"></div>
+        <div class="what">PokerStars</div>
+        <div class="dur">1 h 03 m</div>
+      </div>
+      <div class="block">
+        <div class="when">18:50 &ndash; 20:14</div>
+        <div class="swatch" style="background:var(--app-code)"></div>
+        <div class="what">Visual Studio Code <em>&middot; com Chrome</em></div>
+        <div class="dur">1 h 24 m</div>
+      </div>
+      <div class="block">
+        <div class="when">20:14 &ndash; agora</div>
+        <div class="swatch" style="background:var(--app-chat)"></div>
+        <div class="what">Claude <em>&middot; com Chrome</em></div>
+        <div class="dur">57 m</div>
+      </div>
+    </div>
+
+    <section class="apps">
+      <h2>Apps de hoje</h2>
+      <div class="cols">
+        <div>
+          <div class="row"><div class="sw" style="background:var(--app-code)"></div>
+            <div>Visual Studio Code</div><div class="t">3 h 11 m</div></div>
+          <div class="row"><div class="sw" style="background:var(--app-play)"></div>
+            <div>PokerStars</div><div class="t">1 h 03 m</div></div>
+          <div class="row"><div class="sw" style="background:var(--app-chat)"></div>
+            <div>Claude</div><div class="t">57 m</div></div>
+        </div>
+        <div>
+          <div class="row"><div class="sw" style="background:var(--app-term)"></div>
+            <div>Windows Terminal</div><div class="t">52 m</div></div>
+          <div class="row"><div class="sw" style="background:var(--app-web)"></div>
+            <div>Chrome</div><div class="t">31 m</div></div>
+          <div class="row"><div class="sw" style="background:var(--app-os)"></div>
+            <div>Explorador e Definições</div><div class="t">7 m</div></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="statusbar">
+    <div class="dot"></div>
+    <span>A observar &middot; 21 apps hoje &middot; só nesta máquina</span>
+    <div class="right">
+      <button>Estado e diagnóstico</button>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

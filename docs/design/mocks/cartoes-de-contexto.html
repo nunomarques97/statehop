@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="pt-PT" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<title>Statehop — Direção C, Cartões de Contexto</title>
+<style>
+  /* ---- Direção C — "Cartões de Contexto" ------------------------------
+     Sem eixo do tempo. O dia é um punhado de trechos legíveis, cada um
+     com a sua app dominante e as que o acompanharam. Agregado primeiro,
+     cronologia depois. Cada cartão traz uma barra minúscula que diz onde
+     no dia aquele trecho aconteceu.                                    */
+
+  :root {
+    --surface:       #f6f6f6;
+    --layer:         #ffffff;
+    --layer-alt:     #efefef;
+    --stroke:        #e6e6e6;
+    --stroke-strong: #d5d5d5;
+    --text:          #1a1a1a;
+    --text-2:        #5f5f5f;
+    --text-3:        #8c8c8c;
+    --accent:        #0f6cbd;
+
+    --app-code: #3f6b8a; --app-web: #4f8a7b; --app-term: #7c6aa8;
+    --app-chat: #a8794f; --app-play: #96566b; --app-os: #7a8290;
+    --idle: #dedede;
+
+    --r-md: 6px; --r-lg: 10px;
+  }
+  [data-theme="dark"] {
+    --surface: #1e1e1e; --layer: #2a2a2a; --layer-alt: #252525;
+    --stroke: #383838; --stroke-strong: #4a4a4a;
+    --text: #f2f2f2; --text-2: #b5b5b5; --text-3: #8a8a8a;
+    --accent: #4cc2ff;
+    --app-code: #6a9ec0; --app-web: #6fb8a5; --app-term: #a394d0;
+    --app-chat: #cfa274; --app-play: #c98098; --app-os: #98a2b2;
+    --idle: #3a3a3a;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--surface); color: var(--text);
+    font-family: "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;
+    font-size: 14px; -webkit-font-smoothing: antialiased; }
+  .window { width: 1180px; height: 820px; display: flex; flex-direction: column; overflow: hidden; }
+
+  .titlebar { height: 32px; flex: 0 0 32px; display: flex; align-items: center; padding-left: 12px; gap: 8px; }
+  .titlebar .mark { width: 16px; height: 16px; border-radius: 4px; background: var(--accent); }
+  .titlebar .name { font-size: 12px; color: var(--text-2); }
+  .titlebar .caption { margin-left: auto; display: flex; }
+  .titlebar .caption span { width: 46px; height: 32px; display: grid; place-items: center;
+    color: var(--text-2); font-size: 10px; font-family: "Segoe Fluent Icons","Segoe MDL2 Assets",sans-serif; }
+
+  main { flex: 1; padding: 8px 32px 0; display: flex; flex-direction: column; overflow: hidden; }
+
+  header.day { display: flex; align-items: flex-end; margin-bottom: 20px; }
+  header.day h1 { font-family: "Segoe UI Variable Display","Segoe UI",sans-serif;
+    font-size: 28px; font-weight: 600; margin: 0 16px 0 0; letter-spacing: -0.01em; }
+  header.day .date { color: var(--text-2); font-size: 13px; padding-bottom: 5px; }
+  header.day .total { margin-left: auto; font-size: 13px; color: var(--text-2); padding-bottom: 5px; }
+  header.day .total b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .grid { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr);
+          grid-auto-rows: 1fr; gap: 12px; overflow: hidden; padding-bottom: 4px; }
+
+  .card { background: var(--layer); border: 1px solid var(--stroke); border-radius: var(--r-lg);
+          padding: 15px 17px 13px; display: flex; flex-direction: column; min-height: 0; }
+  .card .top { display: flex; align-items: baseline; gap: 10px; margin-bottom: 2px; }
+  .card .swatch { width: 10px; height: 10px; border-radius: 3px; flex: 0 0 auto; }
+  .card .app { font-family: "Segoe UI Variable Display","Segoe UI",sans-serif;
+               font-size: 17px; font-weight: 600; letter-spacing: -0.005em;
+               overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card .dur { font-size: 21px; font-weight: 600; font-variant-numeric: tabular-nums; margin: 6px 0 2px; }
+  .card .span { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 11px; }
+  .chip { font-size: 12px; color: var(--text-2); background: var(--layer-alt);
+          border-radius: 20px; padding: 3px 10px; display: flex; align-items: center; gap: 6px; }
+  .chip i { width: 6px; height: 6px; border-radius: 50%; display: block; }
+
+  /* elemento assinatura: o localizador do trecho dentro do dia */
+  .locator { margin-top: auto; padding-top: 14px; }
+  .locator .bar { height: 4px; border-radius: 2px; background: var(--layer-alt); position: relative; }
+  .locator .bar i { position: absolute; top: 0; bottom: 0; border-radius: 2px; }
+  .locator .ends { display: flex; justify-content: space-between; margin-top: 5px;
+                   font-size: 10px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+  .card.quiet { background: var(--layer-alt); border-style: dashed; }
+  .card.quiet .app { font-weight: 400; color: var(--text-2); font-size: 17px; }
+  .card.quiet .dur { color: var(--text-2); }
+
+  .card.live { border-color: var(--accent); }
+  .card.live .span::after { content: " · a decorrer"; color: var(--accent); font-weight: 600; }
+
+  .statusbar { flex: 0 0 34px; display: flex; align-items: center; gap: 16px;
+    padding: 0 32px; border-top: 1px solid var(--stroke); color: var(--text-3);
+    font-size: 12px; background: var(--surface); }
+  .statusbar .dot { width: 6px; height: 6px; border-radius: 50%; background: #6aa84f; }
+  [data-theme="dark"] .statusbar .dot { background: #6ccb5f; }
+  .statusbar .right { margin-left: auto; }
+  .statusbar button { font: inherit; color: var(--text-2); background: none; border: none;
+    cursor: pointer; padding: 4px 8px; border-radius: 4px; }
+  .statusbar button:hover { background: var(--layer); color: var(--text); }
+</style>
+</head>
+<body>
+<div class="window">
+
+  <div class="titlebar">
+    <div class="mark"></div><div class="name">Statehop</div>
+    <div class="caption"><span>&#xE921;</span><span>&#xE922;</span><span>&#xE8BB;</span></div>
+  </div>
+
+  <main>
+    <header class="day">
+      <h1>Hoje</h1>
+      <div class="date">Sábado, 6 de setembro</div>
+      <div class="total">8 trechos &middot; <b>7 h 56 m</b> ao computador &middot; 21 apps</div>
+    </header>
+
+    <div class="grid">
+
+      <div class="card">
+        <div class="top"><div class="swatch" style="background:var(--app-code)"></div>
+          <div class="app">Visual Studio Code</div></div>
+        <div class="dur">1 h 47 m</div>
+        <div class="span">13:15 &ndash; 15:02</div>
+        <div class="chips">
+          <div class="chip"><i style="background:var(--app-web)"></i>Chrome</div>
+          <div class="chip"><i style="background:var(--app-term)"></i>Terminal</div>
+          <div class="chip"><i style="background:var(--app-chat)"></i>Claude</div>
+        </div>
+        <div class="locator"><div class="bar"><i style="left:0%; width:22%; background:var(--app-code)"></i></div>
+          <div class="ends"><span>13:15</span><span>21:11</span></div></div>
+      </div>
+
+      <div class="card">
+        <div class="top"><div class="swatch" style="background:var(--app-term)"></div>
+          <div class="app">Windows Terminal</div></div>
+        <div class="dur">52 m</div>
+        <div class="span">15:02 &ndash; 15:54</div>
+        <div class="chips">
+          <div class="chip"><i style="background:var(--app-code)"></i>Visual Studio Code</div>
+        </div>
+        <div class="locator"><div class="bar"><i style="left:22%; width:11%; background:var(--app-term)"></i></div>
+          <div class="ends"><span>13:15</span><span>21:11</span></div></div>
+      </div>
+
+      <div class="card">
+        <div class="top"><div class="swatch" style="background:var(--app-web)"></div>
+          <div class="app">Chrome</div></div>
+        <div class="dur">18 m</div>
+        <div class="span">15:54 &ndash; 16:12</div>
+        <div class="chips">
+          <div class="chip"><i style="background:var(--app-os)"></i>Explorador</div>
+        </div>
+        <div class="locator"><div class="bar"><i style="left:33%; width:4%; background:var(--app-web)"></i></div>
+          <div class="ends"><span>13:15</span><span>21:11</span></div></div>
+      </div>
+
+      <div class="card quiet">
+        <div class="top"><div class="swatch" style="background:var(--idle)"></div>
+          <div class="app">Sem utilização</div></div>
+        <div class="dur">1 h 35 m</div>
+        <div class="span">16:12 &ndash; 17:47 &middot; ecrã bloqueado</div>
+        <div class="locator"><div class="bar"><i style="left:37%; width:20%; background:var(--idle)"></i></div>
+          <div class="ends"><span>13:15</span><span>21:11</span></div></div>
+      </div>
+
+      <div class="card">
+        <div class="top"><div class="swatch" style="background:var(--app-play)"></div>
+          <div class="app">PokerStars</div></div>
+        <div class="dur">1 h 03 m</div>
+        <div class="span">17:47 &ndash; 18:50</div>
+        <div class="chips">
+          <div class="chip"><i style="background:var(--app-web)"></i>Chrome</div>
+        </div>
+        <div class="locator"><div class="bar"><i style="left:57%; width:13%; background:var(--app-play)"></i></div>
+          <div class="ends"><span>13:15</span><span>21:11</span></div></div>
+      </div>
+
+      <div class="card">
+        <div class="top"><div class="swatch" style="background:var(--app-os)"></div>
+          <div class="app">Explorador</div></div>
+        <div class="dur">7 m</div>
+        <div class="span">18:50 &ndash; 18:57</div>
+        <div class="locator"><div class="bar"><i style="left:70%; width:2%; background:var(--app-os)"></i></div>
+          <div class="ends"><span>13:15</span><span>21:11</span></div></div>
+      </div>
+
+      <div class="card quiet">
+        <div class="top"><div class="swatch" style="background:var(--idle)"></div>
+          <div class="app">Sem utilização</div></div>
+        <div class="dur">12 m</div>
+        <div class="span">18:57 &ndash; 19:09</div>
+        <div class="locator"><div class="bar"><i style="left:72%; width:3%; background:var(--idle)"></i></div>
+          <div class="ends"><span>13:15</span><span>21:11</span></div></div>
+      </div>
+
+      <div class="card live">
+        <div class="top"><div class="swatch" style="background:var(--app-chat)"></div>
+          <div class="app">Claude</div></div>
+        <div class="dur">2 h 21 m</div>
+        <div class="span">18:50 &ndash; agora</div>
+        <div class="chips">
+          <div class="chip"><i style="background:var(--app-code)"></i>Visual Studio Code</div>
+          <div class="chip"><i style="background:var(--app-web)"></i>Chrome</div>
+        </div>
+        <div class="locator"><div class="bar"><i style="left:70%; width:30%; background:var(--app-chat)"></i></div>
+          <div class="ends"><span>13:15</span><span>21:11</span></div></div>
+      </div>
+
+    </div>
+  </main>
+
+  <div class="statusbar">
+    <div class="dot"></div>
+    <span>A observar &middot; só nesta máquina</span>
+    <div class="right"><button>Estado e diagnóstico</button></div>
+  </div>
+
+</div>
+</body>
+</html>
