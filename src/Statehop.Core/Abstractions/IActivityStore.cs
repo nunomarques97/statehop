@@ -11,12 +11,23 @@ namespace Statehop.Core.Abstractions;
 /// <param name="LifetimeEvents">Process start/exit events recorded.</param>
 /// <param name="DistinctProcesses">Distinct process identities seen.</param>
 /// <param name="DatabaseBytes">Size on disk — input for the retention policy.</param>
+/// <param name="EphemeralProcesses">
+/// How many of those identities are classified ephemeral — short-lived and
+/// never the owner of a window. Nothing
+/// is discarded; this is what a reader would filter out.
+/// </param>
+/// <param name="EphemeralLifetimeEvents">
+/// Lifetime rows belonging to those identities. This is the number that says
+/// how much of the store is toolchain churn.
+/// </param>
 public sealed record StoreStats(
     long ForegroundEvents,
     long IdleEvents,
     long LifetimeEvents,
     long DistinctProcesses,
-    long DatabaseBytes);
+    long DatabaseBytes,
+    long EphemeralProcesses,
+    long EphemeralLifetimeEvents);
 
 /// <summary>
 /// The B0.2 answer, aggregated over everything observed so far.
@@ -62,6 +73,13 @@ public interface IActivityStore
     StoreStats GetStats();
 
     ElevatedAccessReport GetElevatedAccessReport();
+
+    /// <summary>
+    /// Recomputes the ephemeral classification from the recorded events. Cheap
+    /// enough to run on a slow timer; it reads and updates only
+    /// <c>process_identity</c> and never deletes anything.
+    /// </summary>
+    void ReclassifyEphemeral();
 
     /// <summary>Absolute path of the database file, for display.</summary>
     string DatabasePath { get; }

@@ -81,6 +81,18 @@ public sealed partial class MainPage : Page
             $"{stats.ForegroundEvents} foreground · {stats.IdleEvents} idle · "
             + $"{stats.LifetimeEvents} processos · {stats.DistinctProcesses} apps distintas · "
             + $"{stats.DatabaseBytes / 1024.0:0.0} KB";
+
+        // Classification, not filtering: these rows are all still on disk. The
+        // number is here because it is the one that says how much of the store
+        // is toolchain churn.
+        var ephemeralShare = stats.LifetimeEvents == 0
+            ? 0
+            : 100.0 * stats.EphemeralLifetimeEvents / stats.LifetimeEvents;
+        EphemeralValue.Text =
+            $"Classificados como efémeros: {stats.EphemeralProcesses} de {stats.DistinctProcesses} apps · "
+            + $"{stats.EphemeralLifetimeEvents} de {stats.LifetimeEvents} eventos de processo ({ephemeralShare:0.0} %). "
+            + "Nada é descartado — a marca existe para que um leitor possa filtrar.";
+
         DatabasePathValue.Text = observation.Store.DatabasePath;
 
         var uptime = DateTime.UtcNow - observation.StartedAtUtc;
@@ -206,6 +218,10 @@ public sealed partial class MainPage : Page
         report.AppendLine($"- Eventos de idle: {stats.IdleEvents}");
         report.AppendLine($"- Eventos de ciclo de vida de processos: {stats.LifetimeEvents}");
         report.AppendLine($"- Apps distintas: {stats.DistinctProcesses}");
+        report.AppendLine($"- Classificadas como efémeras: {stats.EphemeralProcesses}");
+        report.AppendLine(
+            $"- Eventos de processo de apps efémeras: {stats.EphemeralLifetimeEvents} "
+            + $"(de {stats.LifetimeEvents}) — classificação, nada foi descartado");
         report.AppendLine();
         report.AppendLine("## Fiabilidade");
         report.AppendLine();
@@ -218,7 +234,10 @@ public sealed partial class MainPage : Page
             + $"(elevado: {(app.Privileges.IsElevated ? "sim" : "não")}, "
             + $"UAC: {(app.Privileges.UacEnabled ? "ligado" : "desligado")})");
         report.AppendLine();
-        report.AppendLine("Nota de privacidade: nenhum título de janela foi lido ou guardado.");
+        report.AppendLine(
+            "Nota de privacidade: nenhum título de janela foi lido ou guardado. O caminho "
+            + "do executável só é guardado inteiro dentro de diretórios de instalação do "
+            + "sistema; fora daí guarda-se só o nome do ficheiro.");
 
         return report.ToString();
     }

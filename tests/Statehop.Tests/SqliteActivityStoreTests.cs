@@ -51,10 +51,17 @@ public sealed class SqliteActivityStoreTests
     {
         using var store = Open();
 
+        // Both paths are inside install directories, so both survive whole and
+        // the two installs stay distinguishable. Outside those directories the
+        // path policy collapses them on purpose — see StoreCorrectionsTests.
         store.RecordForeground(new ForegroundChange(
-            1, new ProcessIdentity("chrome", @"C:\a\chrome.exe", ProcessAccessState.Accessible), DateTime.UtcNow));
+            1,
+            new ProcessIdentity("chrome", @"C:\Program Files\A\chrome.exe", ProcessAccessState.Accessible),
+            DateTime.UtcNow));
         store.RecordForeground(new ForegroundChange(
-            2, new ProcessIdentity("chrome", @"C:\b\chrome.exe", ProcessAccessState.Accessible), DateTime.UtcNow));
+            2,
+            new ProcessIdentity("chrome", @"C:\Program Files\B\chrome.exe", ProcessAccessState.Accessible),
+            DateTime.UtcNow));
 
         Assert.AreEqual(2, store.GetStats().DistinctProcesses);
     }

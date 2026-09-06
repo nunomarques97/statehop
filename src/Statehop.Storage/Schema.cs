@@ -1,18 +1,25 @@
 namespace Statehop.Storage;
 
 /// <summary>
-/// The Phase 0 schema. Deliberately minimal — it does not have
-/// to be the final shape, and Phase 1 will revisit it along with the retention
-/// policy.
+/// The Phase 0 schema, plus the privacy corrections. Deliberately minimal —
+/// it does not have to be the final shape, and Phase 1 will
+/// revisit it along with the retention policy.
 ///
 /// PRIVACY: there is no column anywhere for a window
 /// title, and there must not be one. Titles can carry client names, file
 /// names, URLs and email subjects. What is stored is process identity and
-/// timestamps.
+/// timestamps. Since version 2, `executable_path` is also narrowed by
+/// <see cref="Statehop.Core.Model.ExecutablePathPolicy"/>: the directory only
+/// survives for executables under a system install directory.
+///
+/// Version history:
+///   1 — Phase 0 spike.
+///   2 — Executable-path policy applied to existing rows, plus the
+///       ephemeral-process classification columns.
 /// </summary>
 internal static class Schema
 {
-    internal const int Version = 1;
+    internal const int Version = 2;
 
     internal const string CreateSql = """
         CREATE TABLE IF NOT EXISTS schema_version (
@@ -20,13 +27,22 @@ internal static class Schema
         );
 
         -- One row per distinct application, not per run.
+        --
+        -- The four trailing columns are a *classification*, derived from the
+        -- event tables by ReclassifyEphemeral(). Nothing is discarded on write
+        -- (by design): a wrong rule would lose signal for good, so
+        -- readers filter instead.
         CREATE TABLE IF NOT EXISTS process_identity (
-            id              INTEGER PRIMARY KEY,
-            name            TEXT NOT NULL,
-            executable_path TEXT,
-            access_state    TEXT NOT NULL,
-            first_seen_utc  TEXT NOT NULL,
-            last_seen_utc   TEXT NOT NULL
+            id                 INTEGER PRIMARY KEY,
+            name               TEXT NOT NULL,
+            executable_path    TEXT,
+            access_state       TEXT NOT NULL,
+            first_seen_utc     TEXT NOT NULL,
+            last_seen_utc      TEXT NOT NULL,
+            owned_window       INTEGER NOT NULL DEFAULT 0,
+            lifetime_samples   INTEGER NOT NULL DEFAULT 0,
+            median_lifetime_ms INTEGER,
+            is_ephemeral       INTEGER NOT NULL DEFAULT 0
         );
 
         CREATE UNIQUE INDEX IF NOT EXISTS ix_process_identity_key
@@ -44,6 +60,9 @@ internal static class Schema
 
         CREATE INDEX IF NOT EXISTS ix_foreground_started
             ON foreground_event (started_utc);
+
+        CREATE INDEX IF NOT EXISTS ix_foreground_identity
+            ON foreground_event (identity_id);
 
         -- Absence of user input. NOT "the app was doing nothing".
         CREATE TABLE IF NOT EXISTS idle_event (
@@ -65,6 +84,14 @@ internal static class Schema
         CREATE INDEX IF NOT EXISTS ix_lifetime_observed
             ON process_lifetime_event (observed_utc);
 
+        -- Pairing a Started with its Exited is the only way to measure how
+        -- long a process lived, and that pairing is by pid.
+        CREATE INDEX IF NOT EXISTS ix_lifetime_pid
+            ON process_lifetime_event (pid, kind, observed_utc);
+
+        CREATE INDEX IF NOT EXISTS ix_lifetime_identity
+            ON process_lifetime_event (identity_id);
+
         -- B0.2: per application that owns a visible window,
         -- whether this unelevated app could read its identity.
         CREATE TABLE IF NOT EXISTS window_owner_access (
@@ -77,4 +104,16 @@ internal static class Schema
             last_seen_utc       TEXT NOT NULL
         );
         """;
+
+    /// <summary>
+    /// Columns added in version 2. Applied with ALTER TABLE for databases that
+    /// already exist; <see cref="CreateSql"/> already contains them for new ones.
+    /// </summary>
+    internal static readonly (string Column, string Definition)[] V2IdentityColumns =
+    [
+        ("owned_window", "INTEGER NOT NULL DEFAULT 0"),
+        ("lifetime_samples", "INTEGER NOT NULL DEFAULT 0"),
+        ("median_lifetime_ms", "INTEGER"),
+        ("is_ephemeral", "INTEGER NOT NULL DEFAULT 0"),
+    ];
 }

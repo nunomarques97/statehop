@@ -159,6 +159,11 @@
                 <StackPanel Spacing="6">
                     <TextBlock x:Name="StatsValue" Style="{StaticResource CardValueStyle}" Text="—" />
                     <TextBlock
+                        x:Name="EphemeralValue"
+                        Style="{StaticResource CardLabelStyle}"
+                        TextWrapping="Wrap"
+                        Text="—" />
+                    <TextBlock
                         x:Name="DatabasePathValue"
                         Style="{StaticResource CardLabelStyle}"
                         IsTextSelectionEnabled="True"
@@ -167,7 +172,7 @@
                     <TextBlock
                         Style="{StaticResource CardLabelStyle}"
                         TextWrapping="Wrap"
-                        Text="Guardado: identidade do processo (nome e caminho do executável) e timestamps. Nunca guardado: títulos de janela, conteúdo, URLs. Nada sai desta máquina." />
+                        Text="Guardado: nome do processo e timestamps. O caminho do executável só é guardado inteiro para programas instalados em Program Files, WindowsApps ou na pasta do Windows; fora daí guarda-se apenas o nome do ficheiro, nunca a pasta. Nunca guardado: títulos de janela, conteúdo, URLs. Nada sai desta máquina." />
                     <StackPanel Margin="0,4,0,0" Orientation="Horizontal" Spacing="8">
                         <Button Click="OnExportReport" Content="Exportar relatório do gate" />
                         <TextBlock

@@ -27,12 +27,24 @@ public static class ProcessInspector
         }
 
         var path = TryGetImagePath(pid);
-        return path is null
-            ? new ProcessIdentity(name, null, ProcessAccessState.Denied)
-            : new ProcessIdentity(name, path, ProcessAccessState.Accessible);
+        if (path is null)
+        {
+            return new ProcessIdentity(name, null, ProcessAccessState.Denied);
+        }
+
+        // The directory is dropped here, at the moment of capture, so a full
+        // path outside the install directories never reaches memory that
+        // outlives this call, the window, or the store
+        // (see ExecutablePathPolicy).
+        return new ProcessIdentity(
+            name, ExecutablePathPolicy.Apply(path), ProcessAccessState.Accessible);
     }
 
-    /// <summary>Full image path, or null when access was denied or the process ended.</summary>
+    /// <summary>
+    /// Raw full image path, or null when access was denied or the process
+    /// ended. Callers that persist or display this must put it through
+    /// <see cref="ExecutablePathPolicy"/> first; <see cref="Resolve"/> does.
+    /// </summary>
     public static string? TryGetImagePath(int pid)
     {
         var handle = NativeMethods.OpenProcess(

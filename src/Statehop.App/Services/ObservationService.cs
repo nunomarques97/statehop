@@ -30,6 +30,13 @@ public sealed class ObservationService : IDisposable
     private static readonly TimeSpan ProcessPollInterval = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan AccessProbeInterval = TimeSpan.FromMinutes(2);
 
+    /// <summary>
+    /// How often the ephemeral classification is recomputed. Deliberately slow:
+    /// it is a whole-table pass, it changes nothing a user sees within the
+    /// minute, and this app has to stay cheap all day.
+    /// </summary>
+    private static readonly TimeSpan ReclassifyInterval = TimeSpan.FromMinutes(30);
+
     private const int FeedCapacity = 200;
 
     private readonly SqliteActivityStore _store;
@@ -37,6 +44,7 @@ public sealed class ObservationService : IDisposable
     private readonly IdleWatcher _idle;
     private readonly ProcessWatcher _processes;
     private readonly WindowOwnerProbeRunner _accessProbe;
+    private readonly Timer _reclassifyTimer;
     private readonly LinkedList<ActivityLine> _feed = new();
     private readonly object _feedGate = new();
 
@@ -72,6 +80,7 @@ public sealed class ObservationService : IDisposable
         _idle = new IdleWatcher(IdleThreshold);
         _processes = new ProcessWatcher(ProcessPollInterval);
         _accessProbe = new WindowOwnerProbeRunner(AccessProbeInterval);
+        _reclassifyTimer = new Timer(_ => Reclassify(), null, Timeout.Infinite, Timeout.Infinite);
 
         _foreground.ForegroundChanged += OnForegroundChanged;
         _idle.IdleChanged += OnIdleChanged;
@@ -89,6 +98,26 @@ public sealed class ObservationService : IDisposable
         _idle.Start();
         _processes.Start();
         _accessProbe.Start();
+        _reclassifyTimer.Change(TimeSpan.Zero, ReclassifyInterval);
+    }
+
+    /// <summary>
+    /// Re-derives the ephemeral flags. Never throws out of the timer: a failed
+    /// classification is a cosmetic loss, and taking down an app that is meant
+    /// to run all day over it would not be.
+    /// </summary>
+    private void Reclassify()
+    {
+        try
+        {
+            _store.ReclassifyEphemeral();
+            Updated?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception ex)
+        {
+            RecordingErrors++;
+            LastErrorMessage = ex.Message;
+        }
     }
 
     public IReadOnlyList<ActivityLine> RecentActivity()
@@ -176,6 +205,7 @@ public sealed class ObservationService : IDisposable
         }
 
         _disposed = true;
+        _reclassifyTimer.Dispose();
         _accessProbe.Dispose();
         _processes.Dispose();
         _idle.Dispose();
