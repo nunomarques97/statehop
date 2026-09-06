@@ -134,9 +134,11 @@ public sealed partial class MainPage : Page
     {
         // Wording follows the UX rule in docs/PRODUCT.md even in a test toast:
         // suggestions are probabilistic, never "safe to close".
+        // The toast header already carries the app name, so the first line is a
+        // real title rather than "Statehop" a second time.
         App.Current.Notifications.Show(
-            "Statehop",
-            "Canal de notificações a funcionar. Nesta fase o Statehop só observa — não sugere nem age.");
+            "Canal de notificações a funcionar",
+            "Nesta fase o Statehop só observa — não sugere nem age.");
         Refresh();
     }
 
