@@ -30,5 +30,16 @@ public sealed partial class MainWindow : Window
         };
 
         RootFrame.Navigate(typeof(MainPage));
+
+        // Hiding to the tray leaves the page loaded, so the page cannot learn
+        // it stopped being on screen from its own lifecycle events. The window
+        // has to tell it, or it keeps refreshing into a window nobody sees.
+        VisibilityChanged += (_, args) =>
+        {
+            if (RootFrame.Content is MainPage page)
+            {
+                page.SetRefreshing(args.Visible);
+            }
+        };
     }
 }

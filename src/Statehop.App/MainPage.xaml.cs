@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -16,6 +17,14 @@ public sealed partial class MainPage : Page
 {
     private readonly DispatcherTimer _refreshTimer = new() { Interval = TimeSpan.FromSeconds(1) };
 
+    /// <summary>
+    /// Bound once and then mutated in place. Reassigning ItemsSource once a second
+    /// made the ListView rebuild all 200 item containers on the next layout
+    /// pass, which was 80 % of the app's CPU.
+    /// </summary>
+    private readonly ObservableCollection<ActivityLine> _activity = [];
+
+    private long _lastActivitySequence;
     private bool _suppressToggleEvent;
 
     public MainPage()
@@ -28,12 +37,39 @@ public sealed partial class MainPage : Page
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
+        ActivityList.ItemsSource = _activity;
         _refreshTimer.Tick += (_, _) => Refresh();
         _refreshTimer.Start();
         Refresh();
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e) => _refreshTimer.Stop();
+
+    /// <summary>
+    /// Starts or stops the per-second refresh with the window's visibility.
+    ///
+    /// Unloaded is not the signal: hiding a window to the tray does not unload
+    /// its page, so this timer once ran for the whole day at the
+    /// same cost hidden as open. Statehop spends most of its life invisible,
+    /// so invisible has to be free.
+    /// </summary>
+    internal void SetRefreshing(bool refreshing)
+    {
+        if (!refreshing)
+        {
+            _refreshTimer.Stop();
+            return;
+        }
+
+        if (!_refreshTimer.IsEnabled)
+        {
+            _refreshTimer.Start();
+        }
+
+        // The window may have been hidden for hours; do not make the user
+        // watch stale numbers for a second.
+        Refresh();
+    }
 
     private void Refresh()
     {
@@ -104,7 +140,26 @@ public sealed partial class MainPage : Page
         LastErrorValue.Text = lastError ?? string.Empty;
         LastErrorValue.Visibility = lastError is null ? Visibility.Collapsed : Visibility.Visible;
 
-        ActivityList.ItemsSource = observation.RecentActivity();
+        SyncActivity(observation);
+    }
+
+    /// <summary>
+    /// Adds only the lines the list has not seen, newest at the top, and drops
+    /// the overflow off the bottom. Touching a handful of rows instead of
+    /// replacing the collection is the whole fix.
+    /// </summary>
+    private void SyncActivity(ObservationService observation)
+    {
+        foreach (var line in observation.ActivitySince(_lastActivitySequence))
+        {
+            _activity.Insert(0, line);
+            _lastActivitySequence = line.Sequence;
+        }
+
+        while (_activity.Count > ObservationService.FeedCapacity)
+        {
+            _activity.RemoveAt(_activity.Count - 1);
+        }
     }
 
     /// <summary>

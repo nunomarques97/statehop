@@ -7,10 +7,15 @@ using Statehop.Storage;
 namespace Statehop.App.Services;
 
 /// <summary>One line of the in-memory activity feed shown in the main window.</summary>
+/// <param name="Sequence">
+/// Monotonic id, newest highest. It exists so the window can add only the
+/// lines it has not seen instead of rebuilding the whole list every second —
+/// that rebuild was the entire CPU cost measured at the time.
+/// </param>
 /// <param name="AtLocal">When it happened, in local time.</param>
 /// <param name="Kind">Foreground, Idle or Process.</param>
 /// <param name="Description">Process name and state — never a window title.</param>
-public sealed record ActivityLine(DateTime AtLocal, string Kind, string Description)
+public sealed record ActivityLine(long Sequence, DateTime AtLocal, string Kind, string Description)
 {
     /// <summary>Pre-formatted for display, so the XAML needs no converter.</summary>
     public string TimeText => AtLocal.ToString("HH:mm:ss");
@@ -37,7 +42,8 @@ public sealed class ObservationService : IDisposable
     /// </summary>
     private static readonly TimeSpan ReclassifyInterval = TimeSpan.FromMinutes(30);
 
-    private const int FeedCapacity = 200;
+    /// <summary>Lines kept in memory for the viewer. Public so the window can trim to the same bound.</summary>
+    public const int FeedCapacity = 200;
 
     private readonly SqliteActivityStore _store;
     private readonly ForegroundWatcher _foreground;
@@ -49,6 +55,7 @@ public sealed class ObservationService : IDisposable
     private readonly object _feedGate = new();
 
     private bool _disposed;
+    private long _sequence;
 
     /// <summary>Raised whenever displayed state changed, on a background thread.</summary>
     public event EventHandler? Updated;
@@ -120,11 +127,44 @@ public sealed class ObservationService : IDisposable
         }
     }
 
+    /// <summary>The whole feed, newest first. For the first fill of the list.</summary>
     public IReadOnlyList<ActivityLine> RecentActivity()
     {
         lock (_feedGate)
         {
             return _feed.ToList();
+        }
+    }
+
+    /// <summary>
+    /// Only the lines newer than <paramref name="afterSequence"/>, oldest
+    /// first so the caller can insert them at the top in order.
+    ///
+    /// This is what lets the viewer stop handing the ListView a brand-new
+    /// collection once a second. The list could not tell that 199 of the 200
+    /// rows were unchanged, so it rebuilt every item container on the next
+    /// layout pass — 7,4 % of a core, and it kept doing it with the window
+    /// hidden.
+    /// </summary>
+    public IReadOnlyList<ActivityLine> ActivitySince(long afterSequence)
+    {
+        lock (_feedGate)
+        {
+            var added = new List<ActivityLine>();
+            foreach (var line in _feed)
+            {
+                // The feed is newest first, so the first line at or below the
+                // watermark ends the walk.
+                if (line.Sequence <= afterSequence)
+                {
+                    break;
+                }
+
+                added.Add(line);
+            }
+
+            added.Reverse();
+            return added;
         }
     }
 
@@ -187,7 +227,7 @@ public sealed class ObservationService : IDisposable
 
         lock (_feedGate)
         {
-            _feed.AddFirst(new ActivityLine(DateTime.Now, kind, description));
+            _feed.AddFirst(new ActivityLine(++_sequence, DateTime.Now, kind, description));
             while (_feed.Count > FeedCapacity)
             {
                 _feed.RemoveLast();
