@@ -3,6 +3,8 @@ using System.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Statehop.App.Services;
+using Statehop.Core.Activity;
+using Statehop.Core.Observation;
 
 namespace Statehop.App;
 
@@ -156,7 +158,7 @@ public sealed partial class MainPage : Page
             _lastActivitySequence = line.Sequence;
         }
 
-        while (_activity.Count > ObservationService.FeedCapacity)
+        while (_activity.Count > ActivityFeed.DefaultCapacity)
         {
             _activity.RemoveAt(_activity.Count - 1);
         }

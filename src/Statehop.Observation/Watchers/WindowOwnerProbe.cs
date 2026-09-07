@@ -1,5 +1,6 @@
 using Statehop.Core.Model;
 using Statehop.Observation.Interop;
+using Statehop.Core.Abstractions;
 
 namespace Statehop.Observation.Watchers;
 
@@ -14,7 +15,7 @@ namespace Statehop.Observation.Watchers;
 /// they can be excluded from the headline number — docs/adr/001-packaging.md
 /// already showed those are unreachable in every packaging mode.
 /// </summary>
-public sealed class WindowOwnerProbeRunner : IDisposable
+public sealed class WindowOwnerProbeRunner : IWindowOwnerSource
 {
     private readonly TimeSpan _interval;
     private readonly Timer _timer;

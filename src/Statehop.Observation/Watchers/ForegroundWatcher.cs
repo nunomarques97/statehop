@@ -1,5 +1,6 @@
 using Statehop.Core.Model;
 using Statehop.Observation.Interop;
+using Statehop.Core.Abstractions;
 
 namespace Statehop.Observation.Watchers;
 
@@ -15,7 +16,7 @@ namespace Statehop.Observation.Watchers;
 /// PRIVACY: the window title is never read or stored. Only the owning process
 /// identity and the timestamp are recorded.
 /// </summary>
-public sealed class ForegroundWatcher : IDisposable
+public sealed class ForegroundWatcher : IForegroundSource
 {
     private static readonly TimeSpan ReconcileInterval = TimeSpan.FromSeconds(15);
 

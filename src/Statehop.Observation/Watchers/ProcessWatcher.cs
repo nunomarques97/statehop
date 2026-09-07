@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Statehop.Core.Model;
 using Statehop.Observation.Interop;
+using Statehop.Core.Abstractions;
 
 namespace Statehop.Observation.Watchers;
 
@@ -15,7 +16,7 @@ namespace Statehop.Observation.Watchers;
 /// from GetProcessTimes, which is precise even when the poll that noticed the
 /// process was late.
 /// </summary>
-public sealed class ProcessWatcher : IDisposable
+public sealed class ProcessWatcher : IProcessSource
 {
     private readonly TimeSpan _interval;
     private readonly Timer _timer;

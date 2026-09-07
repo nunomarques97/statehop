@@ -1,6 +1,8 @@
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Statehop.App.Services;
+using Statehop.Core.Observation;
+using Statehop.Storage;
 using Statehop.App.Tray;
 using Statehop.Observation.Interop;
 using Statehop.Observation.Watchers;
@@ -77,7 +79,16 @@ public partial class App : Application
         // whose message loop dispatches to it.
         _messageWindow = new HiddenMessageWindow("StatehopMessageWindow");
 
-        Observation = new ObservationService(AppPaths.DatabaseFile);
+        // Composition root. The observation layer itself lives in
+        // Statehop.Core and knows nothing about WinUI or about SQLite; this is
+        // the only place where the concrete Win32 watchers and the concrete
+        // store are named.
+        Observation = new ObservationService(
+            new SqliteActivityStore(AppPaths.DatabaseFile),
+            new ForegroundWatcher(),
+            new IdleWatcher(ObservationService.IdleThreshold),
+            new ProcessWatcher(ObservationService.ProcessPollInterval),
+            new WindowOwnerProbeRunner(ObservationService.AccessProbeInterval));
         Observation.Start();
 
         SetUpTray();

@@ -1,5 +1,6 @@
 using Statehop.Core.Model;
 using Statehop.Observation.Interop;
+using Statehop.Core.Abstractions;
 
 namespace Statehop.Observation.Watchers;
 
@@ -14,7 +15,7 @@ namespace Statehop.Observation.Watchers;
 /// needed" — see the UX rule in docs/PRODUCT.md. A build, a download or a
 /// container can be the most important thing running while input is idle.
 /// </summary>
-public sealed class IdleWatcher : IDisposable
+public sealed class IdleWatcher : IIdleSource
 {
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(5);
 

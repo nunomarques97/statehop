@@ -1,66 +1,56 @@
 using Statehop.Core.Abstractions;
+using Statehop.Core.Activity;
 using Statehop.Core.Model;
-using Statehop.Observation.Interop;
-using Statehop.Observation.Watchers;
-using Statehop.Storage;
 
-namespace Statehop.App.Services;
-
-/// <summary>One line of the in-memory activity feed shown in the main window.</summary>
-/// <param name="Sequence">
-/// Monotonic id, newest highest. It exists so the window can add only the
-/// lines it has not seen instead of rebuilding the whole list every second —
-/// that rebuild was the entire CPU cost measured at the time.
-/// </param>
-/// <param name="AtLocal">When it happened, in local time.</param>
-/// <param name="Kind">Foreground, Idle or Process.</param>
-/// <param name="Description">Process name and state — never a window title.</param>
-public sealed record ActivityLine(long Sequence, DateTime AtLocal, string Kind, string Description)
-{
-    /// <summary>Pre-formatted for display, so the XAML needs no converter.</summary>
-    public string TimeText => AtLocal.ToString("HH:mm:ss");
-}
+namespace Statehop.Core.Observation;
 
 /// <summary>
 /// The Observation layer of the product, wired to the store.
 ///
-/// This is deliberately the only layer that exists in Phase 0. The
-/// architecture is Observation → Inference → Decision → Execution
-///, and nothing here infers,
-/// decides or acts: it records what happened and stops.
+/// This is deliberately the only layer that exists so far. The architecture is
+/// Observation → Inference → Decision → Execution (docs/PRODUCT.md), and
+/// nothing here infers, decides or acts: it records what happened and stops.
+///
+/// It lives in Core, not in the WinUI project, and it takes its sources as
+/// interfaces. That is what makes it testable, and it is also what the
+/// separation above actually requires — a presentation project owning the
+/// observation layer was a quiet violation of it.
 /// </summary>
 public sealed class ObservationService : IDisposable
 {
-    private static readonly TimeSpan IdleThreshold = TimeSpan.FromMinutes(2);
-    private static readonly TimeSpan ProcessPollInterval = TimeSpan.FromSeconds(30);
-    private static readonly TimeSpan AccessProbeInterval = TimeSpan.FromMinutes(2);
+    /// <summary>How long without input before the user counts as idle.</summary>
+    public static readonly TimeSpan IdleThreshold = TimeSpan.FromMinutes(2);
+
+    /// <summary>How often the process list is enumerated and diffed.</summary>
+    public static readonly TimeSpan ProcessPollInterval = TimeSpan.FromSeconds(30);
+
+    /// <summary>How often the B0.2 window-owner measurement runs.</summary>
+    public static readonly TimeSpan AccessProbeInterval = TimeSpan.FromMinutes(2);
 
     /// <summary>
-    /// How often the ephemeral classification is recomputed. Deliberately slow:
-    /// it is a whole-table pass, it changes nothing a user sees within the
-    /// minute, and this app has to stay cheap all day.
+    /// How often the ephemeral classification is recomputed. Deliberately
+    /// slow: it is a whole-table pass, it changes nothing a user sees within
+    /// the minute, and this app has to stay cheap all day.
     /// </summary>
-    private static readonly TimeSpan ReclassifyInterval = TimeSpan.FromMinutes(30);
+    public static readonly TimeSpan ReclassifyInterval = TimeSpan.FromMinutes(30);
 
-    /// <summary>Lines kept in memory for the viewer. Public so the window can trim to the same bound.</summary>
-    public const int FeedCapacity = 200;
-
-    private readonly SqliteActivityStore _store;
-    private readonly ForegroundWatcher _foreground;
-    private readonly IdleWatcher _idle;
-    private readonly ProcessWatcher _processes;
-    private readonly WindowOwnerProbeRunner _accessProbe;
+    private readonly IActivityStore _store;
+    private readonly IForegroundSource _foreground;
+    private readonly IIdleSource _idle;
+    private readonly IProcessSource _processes;
+    private readonly IWindowOwnerSource _accessProbe;
+    private readonly ActivityFeed _feed;
     private readonly Timer _reclassifyTimer;
-    private readonly LinkedList<ActivityLine> _feed = new();
-    private readonly object _feedGate = new();
 
     private bool _disposed;
-    private long _sequence;
 
     /// <summary>Raised whenever displayed state changed, on a background thread.</summary>
     public event EventHandler? Updated;
 
     public IActivityStore Store => _store;
+
+    /// <summary>The recent-activity buffer, for a view to render incrementally.</summary>
+    public ActivityFeed Feed => _feed;
 
     /// <summary>Process name currently in the foreground, for display only.</summary>
     public string CurrentForeground { get; private set; } = "(ainda não observado)";
@@ -80,13 +70,25 @@ public sealed class ObservationService : IDisposable
 
     public string? LastErrorMessage { get; private set; }
 
-    public ObservationService(string databasePath)
+    /// <summary>
+    /// Takes ownership of everything passed in: <see cref="Dispose"/> disposes
+    /// the sources and, if it is disposable, the store.
+    /// </summary>
+    public ObservationService(
+        IActivityStore store,
+        IForegroundSource foreground,
+        IIdleSource idle,
+        IProcessSource processes,
+        IWindowOwnerSource accessProbe,
+        ActivityFeed? feed = null)
     {
-        _store = new SqliteActivityStore(databasePath);
-        _foreground = new ForegroundWatcher();
-        _idle = new IdleWatcher(IdleThreshold);
-        _processes = new ProcessWatcher(ProcessPollInterval);
-        _accessProbe = new WindowOwnerProbeRunner(AccessProbeInterval);
+        _store = store;
+        _foreground = foreground;
+        _idle = idle;
+        _processes = processes;
+        _accessProbe = accessProbe;
+        _feed = feed ?? new ActivityFeed();
+
         _reclassifyTimer = new Timer(_ => Reclassify(), null, Timeout.Infinite, Timeout.Infinite);
 
         _foreground.ForegroundChanged += OnForegroundChanged;
@@ -108,12 +110,18 @@ public sealed class ObservationService : IDisposable
         _reclassifyTimer.Change(TimeSpan.Zero, ReclassifyInterval);
     }
 
+    /// <summary>The whole feed, newest first. For the first fill of a view.</summary>
+    public IReadOnlyList<ActivityLine> RecentActivity() => _feed.Recent();
+
+    /// <summary>Lines newer than a watermark, oldest first.</summary>
+    public IReadOnlyList<ActivityLine> ActivitySince(long afterSequence) => _feed.Since(afterSequence);
+
     /// <summary>
     /// Re-derives the ephemeral flags. Never throws out of the timer: a failed
     /// classification is a cosmetic loss, and taking down an app that is meant
     /// to run all day over it would not be.
     /// </summary>
-    private void Reclassify()
+    public void Reclassify()
     {
         try
         {
@@ -124,47 +132,6 @@ public sealed class ObservationService : IDisposable
         {
             RecordingErrors++;
             LastErrorMessage = ex.Message;
-        }
-    }
-
-    /// <summary>The whole feed, newest first. For the first fill of the list.</summary>
-    public IReadOnlyList<ActivityLine> RecentActivity()
-    {
-        lock (_feedGate)
-        {
-            return _feed.ToList();
-        }
-    }
-
-    /// <summary>
-    /// Only the lines newer than <paramref name="afterSequence"/>, oldest
-    /// first so the caller can insert them at the top in order.
-    ///
-    /// This is what lets the viewer stop handing the ListView a brand-new
-    /// collection once a second. The list could not tell that 199 of the 200
-    /// rows were unchanged, so it rebuilt every item container on the next
-    /// layout pass — 7,4 % of a core, and it kept doing it with the window
-    /// hidden.
-    /// </summary>
-    public IReadOnlyList<ActivityLine> ActivitySince(long afterSequence)
-    {
-        lock (_feedGate)
-        {
-            var added = new List<ActivityLine>();
-            foreach (var line in _feed)
-            {
-                // The feed is newest first, so the first line at or below the
-                // watermark ends the walk.
-                if (line.Sequence <= afterSequence)
-                {
-                    break;
-                }
-
-                added.Add(line);
-            }
-
-            added.Reverse();
-            return added;
         }
     }
 
@@ -220,20 +187,14 @@ public sealed class ObservationService : IDisposable
         catch (Exception ex)
         {
             // A failed write must never take down an app that is meant to run
-            // all day; it is counted and surfaced instead.
+            // all day; it is counted and surfaced instead. The line still goes
+            // into the feed, because it did happen — the recording failed, the
+            // observation did not.
             RecordingErrors++;
             LastErrorMessage = ex.Message;
         }
 
-        lock (_feedGate)
-        {
-            _feed.AddFirst(new ActivityLine(++_sequence, DateTime.Now, kind, description));
-            while (_feed.Count > FeedCapacity)
-            {
-                _feed.RemoveLast();
-            }
-        }
-
+        _feed.Add(DateTime.Now, kind, description);
         Updated?.Invoke(this, EventArgs.Empty);
     }
 
@@ -250,6 +211,6 @@ public sealed class ObservationService : IDisposable
         _processes.Dispose();
         _idle.Dispose();
         _foreground.Dispose();
-        _store.Dispose();
+        (_store as IDisposable)?.Dispose();
     }
 }

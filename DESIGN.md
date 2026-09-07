@@ -1,71 +1,221 @@
 # DESIGN — Statehop
 
-**Estado:** as regras de produto abaixo estão **fechadas** e valem já. O
-sistema visual (cores, escala tipográfica, espaçamento, raios, movimento)
-fica por preencher até ser escolhida uma das três direções em
-`docs/design/mocks/`.
+**Direção escolhida:** **A — Faixa do Dia**, a 6 set 2026.
+Mock e capturas: `docs/design/mocks/faixa-do-dia.html` e
+`docs/design/mocks/shots/`.
 
-Não escrever código de UI de produção antes dessa escolha.
+Razão da escolha, para se construir a intenção e não a imagem: **a faixa
+responde a "onde é que foi o meu dia" numa só leitura, antes de qualquer texto
+ser processado** — forma, proporção e a interrupção veem-se ao mesmo tempo. E
+escala: é a mesma faixa com 6 blocos ou com 40.
+
+Todo o trabalho de UI segue este ficheiro.
 
 ---
 
-## Regra de produto nº 1 — o Statehop nunca pode parecer vigilância
+# Parte 1 — Regras de produto (fechadas)
 
-Decisão de 6 set 2026. Esta é uma regra de produto, não uma nota de
-estilo, e ganha a qualquer outra consideração de design.
+Estas ganham a qualquer consideração estética. Não se reabrem sem decisão explícita.
+
+## 1. O Statehop nunca pode parecer vigilância
 
 O Statehop observa **tudo** o que o utilizador faz, o dia inteiro. O desenho tem
 de ler como **"isto é teu, e fica aqui"**, nunca como **"a tua atividade está
 a ser medida"**.
 
-Consequências vinculativas:
-
 - **O produto observa e ajuda. Não classifica o utilizador.** Nada de
-  pontuações de foco, nada de produtivo-versus-improdutivo, nada de streaks,
-  nada de metas.
-- **Nenhuma comparação.** Nem com outros utilizadores, nem com médias, nem com
-  "a tua semana passada" apresentada como julgamento. Não há cloud e não vai
-  haver.
-- **Nada pode sugerir que os dados saem da máquina.** Quando houver dúvida, o
-  ecrã di-lo explicitamente ("só nesta máquina").
+  pontuações de foco, produtivo-versus-improdutivo, streaks ou metas.
+- **Nenhuma comparação.** Nem com outros, nem com médias, nem com "a tua
+  semana passada" apresentada como julgamento. Não há cloud e não vai haver.
+- **Nada pode sugerir que os dados saem da máquina.** Na dúvida, o ecrã di-lo:
+  *"só nesta máquina"*.
 - **Nenhuma linguagem de IA em lado nenhum da interface.** IA é implementação,
   não posicionamento (`docs/PRODUCT.md`).
 - **Enquadramento de instrumento é proibido.** Vistas tipo profiler, "tracks",
-  telemetria — mesmo quando tecnicamente elegantes — leem como ferramenta de
-  vigilância. É a única coisa que este produto não pode ser.
+  telemetria — mesmo tecnicamente elegantes — leem como vigilância.
 
 Porquê, em concreto: o público-alvo são power users que **já rejeitaram o
-RescueTime exatamente por isto**. A investigação de mercado de 27 ago
-regista queixas de complexidade, subscrição, **transparência e privacidade**, e
-conclui pela oportunidade de *"local-first + extremamente simples + ação
-concreta"* em vez de *"tracking + dashboards + produtividade abstrata"*.
+RescueTime exatamente por isto**
+(investigação de mercado:
+queixas de transparência e privacidade, e a conclusão pela via *"local-first +
+extremamente simples + ação concreta"*).
 
-## Regra de produto nº 2 — o dia inteiro cabe sem scroll
+## 2. O dia inteiro cabe sem scroll
 
-O trabalho do ecrã principal é responder em dez segundos a "onde é que foi o
-meu dia". Um dia de trabalho completo tem de caber na janela **sem scroll**.
+O trabalho do ecrã principal é responder em dez segundos a *"onde é que foi o
+meu dia"*. Um dia de trabalho completo cabe na janela **sem scroll**.
 
-Isto implica densidade, e a densidade vem da disciplina de instrumento sem o
-enquadramento de instrumento: **a cor só codifica significado, nunca decora.**
-Se uma cor não distingue uma app, um estado ou o "agora", não entra.
+Daqui vem a densidade, e a densidade vem da disciplina de instrumento **sem** o
+enquadramento de instrumento.
 
-## Regra de produto nº 3 — nativo do Windows 11
+## 3. A cor só codifica significado, nunca decora
 
-Tom: **calmo, preciso, nativo.** A app deve parecer parte do Windows 11, não
-uma página web dentro de uma janela. Funciona em tema claro **e** escuro; o
-tema claro não é uma reflexão tardia.
+Se uma cor não distingue **uma app**, **uma ausência** ou **o "agora"**, não
+entra. Não há cor de marca aplicada a superfícies, não há gradientes, não há
+realces decorativos.
 
-## Regra de produto nº 4 — o wording das sugestões é probabilístico
+## 4. Nativo do Windows 11, claro e escuro
 
-Já em `docs/PRODUCT.md` e repetido aqui porque é regra de desenho de interface:
+Tom: **calmo, preciso, nativo**. Deve parecer parte do Windows 11, não uma
+página web dentro de uma janela. O tema claro **não** é uma reflexão tardia.
+
+## 5. O wording das sugestões é probabilístico
+
 *"O Docker parece pouco provável de ser necessário neste contexto"*, nunca
-*"O Docker está inativo, é seguro fechar"*. Inatividade não é inutilidade.
+*"O Docker está inativo, é seguro fechar"*. Inatividade não é inutilidade
+(`docs/PRODUCT.md`).
 
 ---
 
-## Sistema visual — por preencher
+# Parte 2 — Sistema visual (direção A)
 
-Preencher a partir da direção escolhida, com: papéis de cor para claro e
-escuro, escala tipográfica, escala de espaçamento, raios (no máximo 3 valores),
-regras de movimento (um momento assinatura por ecrã) e uma lista de
-faz/não-faz.
+## Cores
+
+Papéis, não nomes de cor. Os valores abaixo são o ponto de partida; o que é
+vinculativo são os **papéis** e a regra 3.
+
+| Token | Papel | Claro | Escuro |
+|---|---|---|---|
+| `surface` | Fundo da janela (onde o Mica assenta) | `#F9F9F9` | `#1F1F1F` |
+| `layer` | Cartões e listas | `#FFFFFF` | `#2B2B2B` |
+| `layer-alt` | Sulcos, fundo da faixa, estados hover | `#F3F3F3` | `#262626` |
+| `stroke` | Contornos e separadores | `#E5E5E5` | `#383838` |
+| `stroke-strong` | Contorno de ênfase | `#D2D2D2` | `#4A4A4A` |
+| `text` | Texto principal | `#1B1B1B` | `#F2F2F2` |
+| `text-2` | Secundário: datas, "com X", rótulos | `#5D5D5D` | `#B8B8B8` |
+| `text-3` | Terciário: eixo, notas, **ausência** | `#8A8A8A` | `#8A8A8A` |
+| `accent` | **Só** o marcador de "agora" | `#0F6CBD` | `#4CC2FF` |
+
+### Paleta categórica das apps
+
+Dessaturada de propósito: distingue sem gritar, e mantém a faixa calma mesmo
+com oito segmentos.
+
+| Token | Claro | Escuro |
+|---|---|---|
+| `app-code` | `#3F6B8A` | `#6A9EC0` |
+| `app-web` | `#4F8A7B` | `#6FB8A5` |
+| `app-term` | `#7C6AA8` | `#A394D0` |
+| `app-chat` | `#A8794F` | `#CFA274` |
+| `app-play` | `#96566B` | `#C98098` |
+| `app-os` | `#7A8290` | `#98A2B2` |
+| `idle` | `#DCDCDC` | `#3A3A3A` |
+
+**Regra de atribuição:** a cor é atribuída por app e tem de ser **estável entre
+sessões** — o utilizador aprende as cores do seu dia. Atribuir por hash do nome do
+processo normalizado, não por ordem de chegada. Apps sem cor atribuída caem em
+`app-os`.
+
+**A paleta não é semântica.** Nenhuma cor quer dizer "bom" ou "mau". Verde não
+é produtivo, vermelho não é desperdício. Isto é a regra de produto 1 aplicada à
+paleta.
+
+## Tipografia
+
+Segoe UI Variable, que é a família do sistema no Windows 11.
+
+| Papel | Família | Tamanho | Peso |
+|---|---|---|---|
+| Título do dia | Segoe UI Variable **Display** | 28 | 600 |
+| Números do cabeçalho | Segoe UI Variable Text | 17 | 600 |
+| Cabeçalho de secção | Segoe UI Variable Text | 14 | 600 |
+| Corpo, linhas de lista | Segoe UI Variable Text | 14 | 400 |
+| Secundário, rótulos | Segoe UI Variable Text | 12–13 | 400 |
+| Eixo, notas | Segoe UI Variable Text | 11 | 400 |
+
+**Todos os números que se comparam usam algarismos tabulares**
+(`font-variant-numeric: tabular-nums`; em XAML, a *feature* OpenType `tnum`).
+Durações e horas alinham em coluna ou não se conseguem ler de relance.
+
+## Espaçamento
+
+Escala de 4: **4, 8, 12, 16, 24, 32**. Nada fora dela.
+Margem da janela: 32 horizontal, 8 no topo (a barra de título já dá ar).
+
+## Raios
+
+Três valores, no máximo: **4** (elementos pequenos, amostras de cor), **6**
+(faixa, botões), **8** (cartões e listas).
+
+## O elemento assinatura: a faixa do dia
+
+- Altura **84 px**, raio 6, cantos cortados (`overflow: hidden`).
+- Fundo `layer-alt`: o sulco tem de se ver mesmo antes de haver dados.
+- Um segmento por bloco contíguo, largura **proporcional à duração**. Sem
+  largura mínima: um bloco de dois minutos deve **parecer** dois minutos.
+- Ausência de utilização é um segmento `idle` — presente, não um buraco.
+- Eixo por baixo, de hora a hora, em `text-3`, 11 px, tabular.
+- **Marcador de "agora":** régua vertical de 2 px em `accent`, a transbordar
+  6 px acima e abaixo da faixa, com o rótulo *agora* por baixo, alinhado à
+  direita da régua. É o único uso de `accent` no ecrã.
+
+## Estados
+
+| Estado | Como se lê |
+|---|---|
+| **Atividade** | `text` a 400, cor da app na amostra, duração em `text` |
+| **Ausência** (`Sem utilização`) | **Tudo em `text-3`**, incluindo hora e duração. Sem fundo diferente. É ausência, não um evento: **recua**, não se destaca. Um preenchimento chamaria mais atenção, não menos. |
+| **A decorrer** | Termina em *"— agora"* em vez de uma hora de fim. Sem badge, sem pulsar. |
+| **Sem dados ainda** | A faixa aparece vazia com o sulco visível e uma linha em `text-2`. Nunca um *spinner*: a app está a observar, não a carregar. |
+
+## Movimento
+
+Um momento assinatura por ecrã, e neste ecrã é **o marcador de "agora" a
+avançar**. Mais nada anima por defeito.
+
+- Sem animação de entrada de listas. As linhas novas aparecem; não deslizam.
+- Sem *fade* na faixa a cada atualização.
+- Respeitar sempre a definição do sistema de **reduzir movimento**.
+
+## Faz / não faz
+
+**Faz**
+- Diz *"só nesta máquina"* onde o utilizador possa ter dúvida.
+- Distingue **"ao computador"** de **"com utilização"**. São números
+  diferentes, e dar só o primeiro inflacionaria o dia.
+- Explica as próprias agregações em texto simples, junto do que agregam
+  (ex.: *"Trocas de foco com menos de um minuto ficam agrupadas no bloco onde
+  aconteceram."*).
+- Põe o diagnóstico da Phase 0 atrás de uma **afordância discreta** na barra de
+  estado.
+
+**Não faz**
+- Gráficos de fatias, sectores, KPIs em mosaico, medidores.
+- Pontuações, metas, streaks, comparações.
+- Emoji como ícones.
+- Cartões dentro de cartões.
+- Cor sem significado.
+- A palavra "IA" ou equivalentes em qualquer parte da interface.
+
+---
+
+# Parte 3 — O que só a build real de WinUI 3 pode resolver
+
+Os mocks são HTML. Decidem organização, paleta, tipografia, densidade e o
+elemento assinatura. **Não** decidem o seguinte, e nenhuma destas linhas deve
+ser tratada como fechada até existir uma captura da app a correr:
+
+- **Mica e Acrylic.** São materiais do sistema, com amostragem do fundo do
+  ambiente de trabalho. `surface` nos mocks é uma cor sólida a aproximá-los. Na
+  app real, a janela deve usar **Mica**, e os cartões ficam por cima dele.
+- **Cor de destaque do sistema.** O Windows deixa o utilizador escolher a sua.
+  O marcador de "agora" deve **seguir a cor de destaque do sistema**, não o
+  azul fixo dos mocks. O valor de `accent` na tabela é apenas o *fallback*.
+- **Barras de deslocamento.** São controlo nativo, com o comportamento de
+  sobreposição do Windows 11. Não estilizar.
+- **Foco de teclado.** O anel de foco do WinUI, a ordem de tabulação e o acesso
+  à faixa por teclado não existem nos mocks. A faixa **tem** de ser navegável
+  por teclado, e cada bloco tem de ter nome acessível.
+- **Contraste elevado.** Nesse modo, a paleta categórica é substituída pelas
+  cores do sistema e a distinção entre apps passa a depender de texto, não de
+  cor. Verificar antes de dar a Phase 1 por fechada.
+- **Tema claro.** Verificar na máquina, não no mock: o Mica claro e o
+  `layer` branco têm menos contraste entre si do que a aproximação sólida
+  sugere.
+- **Tipografia.** Segoe UI Variable tem eixos óticos que o navegador não aplica
+  como o XAML.
+
+**Definition of done de qualquer alteração de UI:** captura da **app a correr**
+em claro e escuro, criticada contra este ficheiro, corrigida e recapturada. Um
+build verde não é prova de que a UI existe — foi assim que se apanharam três
+bugs reais na Phase 0.

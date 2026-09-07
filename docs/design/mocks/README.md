@@ -1,8 +1,14 @@
 # Mocks — Phase 1, ecrã da timeline
 
 Três direções para o ecrã principal da Phase 1.
-**Uma delas será escolhida.** Nenhuma linha de UI de produção foi
-escrita.
+
+**Escolhida: A — Faixa do Dia**, a 6 set 2026. O sistema visual
+que saiu daí está em `DESIGN.md`. As direções B e C ficam como registo da
+decisão, não são para manter atualizadas.
+
+A direção A foi depois revista com três alterações: o cabeçalho de três
+números veio da B, o texto de agrupamento de trocas curtas veio da B, e
+"Sem utilização" passou a ler mais leve do que atividade real.
 
 | Ficheiro | Direção | Screenshot |
 |---|---|---|

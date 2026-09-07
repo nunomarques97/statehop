@@ -68,11 +68,18 @@
 
   main { flex: 1; padding: var(--s2) var(--s6) 0; overflow: hidden; display: flex; flex-direction: column; }
 
-  h1 {
+  header.day { display: flex; align-items: flex-end; gap: 20px; margin-bottom: var(--s5); }
+  header.day h1 {
     font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif;
-    font-size: 28px; font-weight: 600; margin: 0 0 2px; letter-spacing: -0.01em;
+    font-size: 28px; font-weight: 600; margin: 0; letter-spacing: -0.01em;
   }
-  .sub { color: var(--text-2); font-size: 13px; margin: 0 0 var(--s5); }
+  header.day .date { color: var(--text-2); font-size: 13px; padding-bottom: 4px; }
+  /* Three figures, not one. "Ao computador" and "com utilização" are
+     different numbers, and saying only the first would inflate the day. */
+  header.day .totals { margin-left: auto; display: flex; gap: 28px; padding-bottom: 3px; }
+  header.day .totals div { text-align: right; }
+  header.day .totals .n { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  header.day .totals .l { font-size: 11px; color: var(--text-3); }
 
   /* ---- O elemento assinatura: a faixa do dia ---- */
   .ribbon-card {
@@ -80,14 +87,9 @@
     border-radius: var(--r-lg); padding: var(--s5) var(--s5) var(--s4);
     margin-bottom: var(--s5);
   }
-  .ribbon-head { display: flex; align-items: baseline; margin-bottom: var(--s4); }
-  .ribbon-head .total { font-size: 20px; font-weight: 600; }
-  .ribbon-head .total small { font-weight: 400; color: var(--text-2); font-size: 13px; margin-left: 6px; }
-  .ribbon-head .range { margin-left: auto; color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; }
-
   .ribbon-wrap { position: relative; }
   .ribbon {
-    display: flex; height: 56px; border-radius: var(--r-md); overflow: hidden;
+    display: flex; height: 84px; border-radius: var(--r-md); overflow: hidden;
     background: var(--layer-alt);
   }
   .seg { position: relative; }
@@ -105,27 +107,30 @@
   .axis span:last-child { flex: 0; }
 
   /* ---- blocos legíveis ---- */
-  .blocks-head { display: flex; align-items: baseline; margin-bottom: var(--s3); }
+  .blocks-head { display: flex; align-items: baseline; gap: var(--s3); margin-bottom: var(--s3); }
   .blocks-head h2 { font-size: 14px; font-weight: 600; margin: 0; }
-  .blocks-head .hint { margin-left: auto; color: var(--text-3); font-size: 12px; }
+  .blocks-head .note { color: var(--text-3); font-size: 12px; }
+  .blocks-head .count { margin-left: auto; color: var(--text-3); font-size: 12px; }
 
   .blocks { display: flex; flex-direction: column; gap: 1px; background: var(--stroke);
             border: 1px solid var(--stroke); border-radius: var(--r-lg); overflow: hidden; }
   .block { display: grid; grid-template-columns: 92px 10px 1fr 88px; align-items: center;
-           gap: var(--s3); padding: 11px var(--s4); background: var(--layer); }
+           gap: var(--s3); padding: 15px var(--s4); background: var(--layer); }
   .block .when { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; }
   .block .swatch { width: 10px; height: 10px; border-radius: 3px; }
   .block .what { font-size: 14px; }
   .block .what em { font-style: normal; color: var(--text-2); }
   .block .dur { text-align: right; font-variant-numeric: tabular-nums; color: var(--text); }
-  .block.quiet { background: var(--layer-alt); }
-  .block.quiet .what { color: var(--text-2); }
+  .block.quiet .what,
+  .block.quiet .when,
+  .block.quiet .dur { color: var(--text-3); }
+  .block.quiet .what { font-weight: 400; }
 
   .apps { margin-top: var(--s5); }
   .apps h2 { font-size: 14px; font-weight: 600; margin: 0 0 var(--s3); }
   .apps .cols { display: grid; grid-template-columns: 1fr 1fr; column-gap: var(--s6); }
   .apps .row { display: grid; grid-template-columns: 10px 1fr auto; gap: var(--s3);
-               align-items: center; padding: 7px 0; border-bottom: 1px solid var(--stroke); }
+               align-items: center; padding: 11px 0; border-bottom: 1px solid var(--stroke); }
   .apps .row:last-child { border-bottom: none; }
   .apps .row .sw { width: 10px; height: 10px; border-radius: 3px; }
   .apps .row .t { font-variant-numeric: tabular-nums; color: var(--text-2); }
@@ -155,15 +160,17 @@
   </div>
 
   <main>
-    <h1>Hoje</h1>
-    <p class="sub">Sábado, 6 de setembro</p>
+    <header class="day">
+      <h1>Hoje</h1>
+      <div class="date">Sábado, 6 de setembro &middot; 13:15 &ndash; 21:11</div>
+      <div class="totals">
+        <div><div class="n">7 h 56 m</div><div class="l">ao computador</div></div>
+        <div><div class="n">6 h 21 m</div><div class="l">com utilização</div></div>
+        <div><div class="n">21</div><div class="l">apps</div></div>
+      </div>
+    </header>
 
     <section class="ribbon-card">
-      <div class="ribbon-head">
-        <div class="total">7 h 56 m <small>ao computador</small></div>
-        <div class="range">13:15 &ndash; 21:11</div>
-      </div>
-
       <div class="ribbon-wrap" style="padding-bottom:4px">
         <div class="ribbon">
           <div class="seg" style="flex:118; background:var(--app-code)"></div>
@@ -186,7 +193,8 @@
 
     <div class="blocks-head">
       <h2>Blocos do dia</h2>
-      <div class="hint">Agrupa trocas curtas de foco. 6 blocos.</div>
+      <div class="note">Trocas de foco com menos de um minuto ficam agrupadas no bloco onde aconteceram.</div>
+      <div class="count">6 blocos</div>
     </div>
 
     <div class="blocks">
@@ -253,7 +261,7 @@
 
   <div class="statusbar">
     <div class="dot"></div>
-    <span>A observar &middot; 21 apps hoje &middot; só nesta máquina</span>
+    <span>A observar &middot; só nesta máquina</span>
     <div class="right">
       <button>Estado e diagnóstico</button>
     </div>
