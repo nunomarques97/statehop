@@ -125,7 +125,8 @@ public sealed class StoreCorrectionsTests
             Assert.AreEqual(2, store.MigratedIdentitiesKept);
         }
 
-        Assert.AreEqual("2", SingleValue("SELECT version FROM schema_version;"));
+        Assert.AreEqual("3", SingleValue("SELECT version FROM schema_version;"),
+            "a version 1 database must land on the current schema, not on an intermediate one");
 
         // The three project folders collapsed to one identity...
         Assert.AreEqual(
@@ -177,7 +178,8 @@ public sealed class StoreCorrectionsTests
 
         using var second = Open();
         Assert.AreEqual(0, second.MigratedIdentitiesMerged, "a migrated database must not be migrated again");
-        Assert.AreEqual("2", SingleValue("SELECT version FROM schema_version;"));
+        Assert.AreEqual("3", SingleValue("SELECT version FROM schema_version;"),
+            "a version 1 database must land on the current schema, not on an intermediate one");
     }
 
     /// <summary>

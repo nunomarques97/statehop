@@ -20,6 +20,16 @@ Todas as capturas a **1180 × 820**, que é o tamanho real da janela. Há també
 uma verificação a 900 de largura (`shots/*-900.png`), porque a janela é
 redimensionável.
 
+**Nota de 7 set 2026:** os mocks usam seis variáveis de cor com nomes de
+categoria (`--app-code`, `--app-web`, …). Essa nomenclatura foi **substituída**
+no `DESIGN.md` por dez lugares neutros com atribuição estável por hash e
+reparação de vizinhança. O aspeto da direção A não muda; os nomes das variáveis
+no HTML ficam como estavam, porque o mock é o registo da decisão e não a fonte
+de verdade. A fonte de verdade é o `DESIGN.md`.
+
+O mock também assume **6 blocos**. Um dia real de uso dá **131**: é uma questão
+de densidade em aberto.
+
 ## O que estes mocks decidem, e o que não decidem
 
 **Decidem:** a organização da informação, a paleta e o que a cor codifica, a

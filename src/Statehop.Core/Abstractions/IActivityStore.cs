@@ -1,4 +1,5 @@
 using Statehop.Core.Model;
+using Statehop.Core.Sessions;
 
 namespace Statehop.Core.Abstractions;
 
@@ -80,6 +81,23 @@ public interface IActivityStore
     /// <c>process_identity</c> and never deletes anything.
     /// </summary>
     void ReclassifyEphemeral();
+
+    /// <summary>
+    /// Everything recorded for one local day, in the shape the session builder
+    /// consumes. <paramref name="nowUtc"/> closes the span that is still open,
+    /// so the store never has to reach for a clock of its own.
+    /// </summary>
+    DayObservations ReadDay(DateOnly localDay, DateTime nowUtc);
+
+    /// <summary>
+    /// Rolls raw events older than the policy window into
+    /// daily totals and drops the raw rows.
+    ///
+    /// Deleting observation is irreversible, so this never runs on its own:
+    /// pass <paramref name="apply"/> false to get exactly the same numbers
+    /// back without writing or deleting anything.
+    /// </summary>
+    RetentionOutcome ApplyRetention(RetentionPolicy policy, DateTime nowUtc, bool apply);
 
     /// <summary>Absolute path of the database file, for display.</summary>
     string DatabasePath { get; }

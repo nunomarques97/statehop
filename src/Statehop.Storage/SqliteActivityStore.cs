@@ -1,6 +1,7 @@
 using Microsoft.Data.Sqlite;
 using Statehop.Core.Abstractions;
 using Statehop.Core.Model;
+using Statehop.Core.Sessions;
 
 namespace Statehop.Storage;
 
@@ -82,6 +83,9 @@ public sealed class SqliteActivityStore : IActivityStore, IDisposable
         {
             MigrateToV2();
         }
+
+        // Version 3 is additive: the roll-up tables are created by CreateSql,
+        // which runs with IF NOT EXISTS on every open. Nothing to rewrite.
 
         Execute($"UPDATE schema_version SET version = {Schema.Version};");
     }
@@ -595,6 +599,207 @@ public sealed class SqliteActivityStore : IActivityStore, IDisposable
         command.Parameters.AddWithValue("$seen", Iso(seenUtc));
         command.Parameters.AddWithValue("$id", identityId);
         command.ExecuteNonQuery();
+    }
+
+    // ---- Reading -----------------------------------------------------------
+
+    public DayObservations ReadDay(DateOnly localDay, DateTime nowUtc)
+    {
+        // ToDateTime yields an Unspecified kind, which ToUniversalTime reads as
+        // local. That is exactly the intent: a "day" is the user's day, and
+        // the conversion has to go through the real time zone so the boundary
+        // is right across a DST change.
+        var startUtc = localDay.ToDateTime(TimeOnly.MinValue).ToUniversalTime();
+        var endUtc = localDay.ToDateTime(TimeOnly.MinValue).AddDays(1).ToUniversalTime();
+
+        var foreground = new List<ForegroundSpan>();
+        var absence = new List<AbsenceSpan>();
+
+        lock (_gate)
+        {
+            using (var command = _connection.CreateCommand())
+            {
+                // The open span is closed with the caller's clock rather than
+                // one of our own, so the same day read twice in a test gives
+                // the same answer twice.
+                command.CommandText =
+                    "SELECT i.name, f.started_utc, IFNULL(f.ended_utc, $now) " +
+                    "FROM foreground_event f " +
+                    "JOIN process_identity i ON i.id = f.identity_id " +
+                    "WHERE f.started_utc < $end AND IFNULL(f.ended_utc, $now) > $start " +
+                    "ORDER BY f.started_utc;";
+                command.Parameters.AddWithValue("$start", Iso(startUtc));
+                command.Parameters.AddWithValue("$end", Iso(endUtc));
+                command.Parameters.AddWithValue("$now", Iso(nowUtc));
+
+                using var reader = command.ExecuteReader();
+                while (reader.Read())
+                {
+                    var start = Local(reader.GetString(1));
+                    var end = Local(reader.GetString(2));
+                    if (end <= start) { continue; }
+
+                    foreground.Add(new ForegroundSpan(reader.GetString(0), start, end));
+                }
+            }
+
+            using (var command = _connection.CreateCommand())
+            {
+                command.CommandText =
+                    "SELECT started_utc, IFNULL(ended_utc, $now) FROM idle_event " +
+                    "WHERE started_utc < $end AND IFNULL(ended_utc, $now) > $start " +
+                    "ORDER BY started_utc;";
+                command.Parameters.AddWithValue("$start", Iso(startUtc));
+                command.Parameters.AddWithValue("$end", Iso(endUtc));
+                command.Parameters.AddWithValue("$now", Iso(nowUtc));
+
+                using var reader = command.ExecuteReader();
+                while (reader.Read())
+                {
+                    var start = Local(reader.GetString(0));
+                    var end = Local(reader.GetString(1));
+                    if (end <= start) { continue; }
+
+                    absence.Add(new AbsenceSpan(start, end, AbsenceReason.NoInput));
+                }
+            }
+        }
+
+        return new DayObservations(localDay, foreground, absence);
+    }
+
+    // ---- Retention -------------------------------------
+
+    public RetentionOutcome ApplyRetention(RetentionPolicy policy, DateTime nowUtc, bool apply)
+    {
+        ArgumentNullException.ThrowIfNull(policy);
+        ArgumentOutOfRangeException.ThrowIfNegative(policy.RawDays);
+
+        var cutoffDay = DateOnly.FromDateTime(nowUtc.ToLocalTime().Date.AddDays(-policy.RawDays));
+        var cutoffUtc = cutoffDay.ToDateTime(TimeOnly.MinValue).ToUniversalTime();
+        var cutoff = Iso(cutoffUtc);
+
+        lock (_gate)
+        {
+            var foregroundRows = CountBefore("foreground_event", "started_utc", cutoff);
+            var idleRows = CountBefore("idle_event", "started_utc", cutoff);
+            var lifetimeRows = CountBefore("process_lifetime_event", "observed_utc", cutoff);
+            var days = DistinctDaysBefore(cutoff);
+
+            var outcome = new RetentionOutcome(
+                cutoffDay, days, foregroundRows, idleRows, lifetimeRows, apply);
+
+            if (!apply || outcome.TotalRowsRemoved == 0)
+            {
+                // A preview walks exactly the same counting path as the real
+                // run. Deleting observation cannot be undone, so the number the
+                // user approves has to be the number that happens.
+                return outcome with { Applied = false };
+            }
+
+            using var transaction = _connection.BeginTransaction();
+
+            RollUp(transaction, RollUpForegroundSql, cutoff);
+            RollUp(transaction, RollUpLifetimeSql, cutoff);
+            RollUp(transaction, RollUpIdleSql, cutoff);
+
+            DeleteBefore(transaction, "foreground_event", "started_utc", cutoff);
+            DeleteBefore(transaction, "idle_event", "started_utc", cutoff);
+            DeleteBefore(transaction, "process_lifetime_event", "observed_utc", cutoff);
+
+            transaction.Commit();
+            return outcome;
+        }
+    }
+
+    private const string RollUpForegroundSql = """
+        INSERT INTO daily_app_usage (day, identity_id, foreground_ms, switches, starts, exits)
+        SELECT date(started_utc, 'localtime'), identity_id,
+               SUM(IFNULL(duration_ms, 0)), COUNT(*), 0, 0
+        FROM foreground_event
+        WHERE started_utc < $cutoff
+        GROUP BY 1, 2
+        ON CONFLICT(day, identity_id) DO UPDATE SET
+            foreground_ms = daily_app_usage.foreground_ms + excluded.foreground_ms,
+            switches      = daily_app_usage.switches + excluded.switches;
+        """;
+
+    private const string RollUpLifetimeSql = """
+        INSERT INTO daily_app_usage (day, identity_id, foreground_ms, switches, starts, exits)
+        SELECT date(observed_utc, 'localtime'), identity_id, 0, 0,
+               SUM(CASE WHEN kind = 'Started' THEN 1 ELSE 0 END),
+               SUM(CASE WHEN kind = 'Exited' THEN 1 ELSE 0 END)
+        FROM process_lifetime_event
+        WHERE observed_utc < $cutoff
+        GROUP BY 1, 2
+        ON CONFLICT(day, identity_id) DO UPDATE SET
+            starts = daily_app_usage.starts + excluded.starts,
+            exits  = daily_app_usage.exits + excluded.exits;
+        """;
+
+    private const string RollUpIdleSql = """
+        INSERT INTO daily_absence (day, idle_ms, idle_events)
+        SELECT date(started_utc, 'localtime'), SUM(IFNULL(duration_ms, 0)), COUNT(*)
+        FROM idle_event
+        WHERE started_utc < $cutoff
+        GROUP BY 1
+        ON CONFLICT(day) DO UPDATE SET
+            idle_ms     = daily_absence.idle_ms + excluded.idle_ms,
+            idle_events = daily_absence.idle_events + excluded.idle_events;
+        """;
+
+    private void RollUp(SqliteTransaction transaction, string sql, string cutoff)
+    {
+        using var command = _connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = sql;
+        command.Parameters.AddWithValue("$cutoff", cutoff);
+        command.ExecuteNonQuery();
+    }
+
+    private void DeleteBefore(SqliteTransaction transaction, string table, string column, string cutoff)
+    {
+        using var command = _connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = $"DELETE FROM {table} WHERE {column} < $cutoff;";
+        command.Parameters.AddWithValue("$cutoff", cutoff);
+        command.ExecuteNonQuery();
+    }
+
+    private long CountBefore(string table, string column, string cutoff)
+    {
+        using var command = _connection.CreateCommand();
+        command.CommandText = $"SELECT COUNT(*) FROM {table} WHERE {column} < $cutoff;";
+        command.Parameters.AddWithValue("$cutoff", cutoff);
+        return Convert.ToInt64(command.ExecuteScalar());
+    }
+
+    private int DistinctDaysBefore(string cutoff)
+    {
+        using var command = _connection.CreateCommand();
+        command.CommandText = """
+            SELECT COUNT(*) FROM (
+                SELECT date(started_utc, 'localtime') AS d FROM foreground_event WHERE started_utc < $cutoff
+                UNION
+                SELECT date(started_utc, 'localtime') FROM idle_event WHERE started_utc < $cutoff
+                UNION
+                SELECT date(observed_utc, 'localtime') FROM process_lifetime_event WHERE observed_utc < $cutoff
+            );
+            """;
+        command.Parameters.AddWithValue("$cutoff", cutoff);
+        return Convert.ToInt32(command.ExecuteScalar());
+    }
+
+    private static DateTime Local(string storedUtc)
+    {
+        var utc = DateTime.ParseExact(
+            storedUtc,
+            "yyyy-MM-dd HH:mm:ss.fff",
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.AssumeUniversal
+                | System.Globalization.DateTimeStyles.AdjustToUniversal);
+
+        return utc.ToLocalTime();
     }
 
     private long Count(string table, string? where = null)

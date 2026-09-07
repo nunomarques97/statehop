@@ -16,10 +16,12 @@ namespace Statehop.Storage;
 ///   1 — Phase 0 spike.
 ///   2 — Executable-path policy applied to existing rows, plus the
 ///       ephemeral-process classification columns.
+///   3 — Daily roll-up tables for the retention policy.
+///       Additive only: no existing column changes.
 /// </summary>
 internal static class Schema
 {
-    internal const int Version = 2;
+    internal const int Version = 3;
 
     internal const string CreateSql = """
         CREATE TABLE IF NOT EXISTS schema_version (
@@ -91,6 +93,30 @@ internal static class Schema
 
         CREATE INDEX IF NOT EXISTS ix_lifetime_identity
             ON process_lifetime_event (identity_id);
+
+        -- Retention. Raw events older than the policy
+        -- window are summarised here and then dropped. One row per local day
+        -- per application: ~30 rows a day, so a year of history costs about a
+        -- megabyte, against ~18 MB for a single month of raw events.
+        --
+        -- What a roll-up cannot answer is which applications were open AT THE
+        -- SAME TIME. Co-occurrence is the whole of Phase 3, so the raw window
+        -- has to stay wide enough to hold the evidence.
+        CREATE TABLE IF NOT EXISTS daily_app_usage (
+            day           TEXT NOT NULL,
+            identity_id   INTEGER NOT NULL REFERENCES process_identity(id),
+            foreground_ms INTEGER NOT NULL,
+            switches      INTEGER NOT NULL,
+            starts        INTEGER NOT NULL DEFAULT 0,
+            exits         INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY (day, identity_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS daily_absence (
+            day         TEXT NOT NULL PRIMARY KEY,
+            idle_ms     INTEGER NOT NULL,
+            idle_events INTEGER NOT NULL
+        );
 
         -- B0.2: per application that owns a visible window,
         -- whether this unelevated app could read its identity.

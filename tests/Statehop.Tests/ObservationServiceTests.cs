@@ -1,4 +1,5 @@
 using Statehop.Core.Abstractions;
+using Statehop.Core.Sessions;
 using Statehop.Core.Model;
 using Statehop.Core.Observation;
 using Statehop.Storage;
@@ -88,6 +89,9 @@ public sealed class ObservationServiceTests
         public void RecordLifetime(ProcessLifetimeChange change) => Note("lifetime");
         public void RecordWindowOwnerProbe(IReadOnlyList<WindowOwnerProbe> probes) => Note("probe");
         public void ReclassifyEphemeral() => Note("reclassify");
+        public DayObservations ReadDay(DateOnly day, DateTime nowUtc) => DayObservations.Empty(day);
+        public RetentionOutcome ApplyRetention(RetentionPolicy policy, DateTime nowUtc, bool apply) =>
+            new(DateOnly.FromDateTime(nowUtc), 0, 0, 0, 0, false);
         public StoreStats GetStats() => new(0, 0, 0, 0, 0, 0, 0);
         public ElevatedAccessReport GetElevatedAccessReport() => new(0, 0, [], 0);
         public void Dispose() => Disposed = true;
