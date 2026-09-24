@@ -20,3 +20,16 @@ BundleArtifacts/
 Thumbs.db
 Desktop.ini
 .forja/
+
+# Credentials and secrets (never commit)
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.jks
+*.keystore
+google-services.json
+credentials.json
+*token*
+*secret*
