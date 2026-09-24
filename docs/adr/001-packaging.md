@@ -1,149 +1,138 @@
 # ADR 001 — Packaged (MSIX) vs unpackaged
 
-**Data:** 27–28 ago 2026 · **Blocking point:** B0.1
+**Date:** 27–28 Aug 2026 · **Blocking point:** B0.1
 
-## Contexto
+## Context
 
-A Microsoft Store é a única via de distribuição assinada viável sem
-custo (€0, sem SmartScreen),
-e a Store exige MSIX. Mas MSIX traz identidade de pacote e um modelo de
-"Desktop Bridge" que, historicamente, é confundido com o sandboxing
-UWP/AppContainer — daí a necessidade de decidir com evidência, não com
-suposição, porque o produto depende de enumerar processos de terceiros,
-ler a janela em primeiro plano, detetar idle e (mais tarde) fechar
-processos.
+The Microsoft Store is the only viable signed distribution route at no cost
+(€0, no SmartScreen), and the Store requires MSIX. But MSIX brings package
+identity and a "Desktop Bridge" model that is historically confused with
+UWP/AppContainer sandboxing. The decision therefore has to rest on evidence,
+not assumption, because the product depends on enumerating third-party
+processes, reading the foreground window, detecting idle time and (later)
+closing processes.
 
-## Método
+## Method
 
-Documentação oficial (Microsoft Learn) **+ teste mínimo empírico**
-numa máquina de desenvolvimento (Windows 11 Home, build 26200, sessão não elevada):
+Official documentation (Microsoft Learn) **plus a minimal empirical test** on a
+development machine (Windows 11 Home, build 26200, non-elevated session):
 
-1. Escrita de uma app de consola .NET 10 (`PkgSpike`, fora do repo,
-   descartável) que executa cinco verificações
-   via P/Invoke puro (sem WinUI, para isolar o efeito do packaging da
-   stack de UI):
-   - Identidade de pacote (`Windows.ApplicationModel.Package.Current`).
-   - Enumeração de processos (`Process.GetProcesses()` +
-     `MainModule.FileName` de cada um).
-   - Janela em primeiro plano (`GetForegroundWindow` +
+1. A .NET 10 console app (`PkgSpike`, outside the repository, disposable) that
+   runs five checks through plain P/Invoke (no WinUI, to isolate the effect of
+   packaging from the UI stack):
+   - Package identity (`Windows.ApplicationModel.Package.Current`).
+   - Process enumeration (`Process.GetProcesses()` + each one's
+     `MainModule.FileName`).
+   - Foreground window (`GetForegroundWindow` +
      `GetWindowThreadProcessId`).
-   - Deteção de idle (`GetLastInputInfo`).
-   - Hotkey global (`RegisterHotKey` numa janela message-only).
-   - `OpenProcess(PROCESS_TERMINATE, …)` sobre um processo próprio
-     (Notepad lançado pela própria app) e sobre um processo SYSTEM
-     (`services.exe`), sem chegar a matar nada.
-2. Corrida **A — unpackaged**: `dotnet build` + execução direta do
-   `.exe`.
-3. Corrida **B — packaged**: empacotamento manual em MSIX
-   (`AppxManifest.xml` com `rescap:Capability Name="runFullTrust"`,
-   `EntryPoint="Windows.FullTrustApplication"`), assinado com um
-   certificado de teste autoassinado (gerado e removido no fim do teste),
-   instalado via `Add-AppxPackage` com o Developer Mode do Windows
-   ativado para o efeito (é uma alteração de sistema, não só instalação
-   de SDK), e
-   executado diretamente a partir de
+   - Idle detection (`GetLastInputInfo`).
+   - Global hotkey (`RegisterHotKey` on a message-only window).
+   - `OpenProcess(PROCESS_TERMINATE, …)` on an own process (Notepad launched by
+     the app itself) and on a SYSTEM process (`services.exe`), without actually
+     killing anything.
+2. Run **A — unpackaged**: `dotnet build` + running the `.exe` directly.
+3. Run **B — packaged**: manual MSIX packaging (`AppxManifest.xml` with
+   `rescap:Capability Name="runFullTrust"`,
+   `EntryPoint="Windows.FullTrustApplication"`), signed with a self-signed test
+   certificate (created and removed at the end of the test), installed with
+   `Add-AppxPackage` with Windows Developer Mode enabled for the purpose (it is
+   a system change, not just an SDK install), and run directly from
    `C:\Program Files\WindowsApps\<PackageFullName>\PkgSpike.exe`.
-4. Pacote de teste e certificado **removidos no fim** do teste
-   (`Remove-AppxPackage`, remoção do certificado de
-   `Cert:\LocalMachine\TrustedPeople` e `Cert:\CurrentUser\My`). Nada
-   disto fica instalado na máquina.
+4. Test package and certificate **removed at the end** of the test
+   (`Remove-AppxPackage`, certificate removed from
+   `Cert:\LocalMachine\TrustedPeople` and `Cert:\CurrentUser\My`). None of it
+   stays installed on the machine.
 
-## Resultados (lado a lado)
+## Results (side by side)
 
-| Verificação | Unpackaged | Packaged (MSIX, full trust) |
+| Check | Unpackaged | Packaged (MSIX, full trust) |
 |---|---|---|
-| `Package.Current` resolve | ❌ (`InvalidOperationException`, esperado) | ✅ `Statehop.PkgSpike_1.0.0.0_x64__x44vs2hqd2ayr` |
-| Processos enumerados / `MainModule` acessível | 349 / 329 acessíveis | 332 / 312 acessíveis |
-| `MainModule` negado | 20 — todos processos SYSTEM/protegidos (Idle, System, Secure System, Registry, smss, csrss, wininit) | 20 — **exatamente o mesmo conjunto** (Idle, System, Secure System, Registry, smss, csrss, wininit) |
-| Foreground window | ✅ título+pid+nome corretos | ✅ idêntico |
-| Idle detection (`GetLastInputInfo`) | ✅ funciona | ✅ funciona |
-| Hotkey global (`RegisterHotKey`) | ✅ regista e desregista sem erro | ✅ idêntico |
-| `OpenProcess(PROCESS_TERMINATE)` em processo próprio (Notepad filho) | ✅ permitido | ✅ permitido |
-| `OpenProcess(PROCESS_TERMINATE)` em `services.exe` (SYSTEM) | ❌ negado | ❌ negado — **mesmo resultado** |
+| `Package.Current` resolves | ❌ (`InvalidOperationException`, expected) | ✅ `Statehop.PkgSpike_1.0.0.0_x64__x44vs2hqd2ayr` |
+| Processes enumerated / `MainModule` accessible | 349 / 329 accessible | 332 / 312 accessible |
+| `MainModule` denied | 20 — all SYSTEM/protected processes (Idle, System, Secure System, Registry, smss, csrss, wininit) | 20 — **exactly the same set** (Idle, System, Secure System, Registry, smss, csrss, wininit) |
+| Foreground window | ✅ correct title+pid+name | ✅ identical |
+| Idle detection (`GetLastInputInfo`) | ✅ works | ✅ works |
+| Global hotkey (`RegisterHotKey`) | ✅ registers and unregisters without error | ✅ identical |
+| `OpenProcess(PROCESS_TERMINATE)` on own process (child Notepad) | ✅ allowed | ✅ allowed |
+| `OpenProcess(PROCESS_TERMINATE)` on `services.exe` (SYSTEM) | ❌ denied | ❌ denied — **same result** |
 
-(A contagem total de processos difere ligeiramente entre as duas
-corridas — 349 vs. 332 — porque não foram feitas em simultâneo, não
-por causa do packaging; o padrão de acesso/negação é idêntico.)
+(The total process count differs slightly between the two runs, 349 vs 332,
+because they were not run at the same time, not because of packaging; the
+access/denial pattern is identical.)
 
-**Conclusão empírica: não há diferença funcional observável entre app
-packaged (full trust) e unpackaged para nenhuma das cinco capacidades
-testadas.** A única restrição encontrada (acesso negado a processos
-SYSTEM/protegidos) ocorre **igualmente nos dois modos** — é uma questão
-de integrity level/ACL do processo alvo (relevante para B0.2, não para
-B0.1), não uma restrição imposta pelo MSIX.
+**Empirical conclusion: there is no observable functional difference between a
+packaged (full trust) and an unpackaged app for any of the five capabilities
+tested.** The only restriction found (access denied to SYSTEM/protected
+processes) happens **equally in both modes**: it is a matter of the target
+process's integrity level/ACL (relevant to B0.2, not B0.1), not a restriction
+imposed by MSIX.
 
-## Respostas às perguntas
+## Answers to the questions
 
-**1. Uma app WinUI 3 packaged (MSIX) consegue enumerar processos de
-terceiros, ler a foreground window, detetar idle e registar hotkeys
-globais sem privilégios elevados?**
+**1. Can a packaged (MSIX) WinUI 3 app enumerate third-party processes, read
+the foreground window, detect idle time and register global hotkeys without
+elevated privileges?**
 
-Sim, confirmado empiricamente acima. A razão de fundo (documentação
-oficial): um pacote MSIX declarado `runFullTrust` corre com um
-processo Win32 normal, a integrity level **medium** — é o modelo
-"Desktop Bridge", distinto do sandboxing AppContainer usado por apps
-UWP restritas. Apps full-trust não estão isoladas por AppContainer e
-mantêm acesso direto à maioria dos recursos do sistema, tal como uma
-app unpackaged do mesmo utilizador
+Yes, confirmed empirically above. The underlying reason (official
+documentation): an MSIX package declared `runFullTrust` runs as a normal Win32
+process at **medium** integrity level. This is the "Desktop Bridge" model,
+distinct from the AppContainer sandboxing used by restricted UWP apps.
+Full-trust apps are not isolated by AppContainer and keep direct access to most
+system resources, just like an unpackaged app of the same user
 ([MSIX containerization overview](https://learn.microsoft.com/en-us/windows/msix/msix-containerization-overview),
 [Understanding how packaged desktop apps run on Windows](https://learn.microsoft.com/en-us/windows/msix/desktop/desktop-to-uwp-behind-the-scenes)).
-A confusão comum ("MSIX = sandboxed") aplica-se a apps AppContainer,
-não ao caso do Statehop.
+The common confusion ("MSIX = sandboxed") applies to AppContainer apps, not to
+Statehop's case.
 
-**2. Como se faz arranque com o Windows em cada modelo?**
+**2. How does starting with Windows work in each model?**
 
-- **Unpackaged:** mecanismo clássico — chave de registo
-  `HKCU\...\Run` ou atalho na pasta Startup do utilizador.
-- **Packaged (MSIX):** esses dois mecanismos **deixam de funcionar**
-  para apps packaged. O modelo correto é a extensão `StartupTask`
-  declarada no `AppxManifest.xml`
+- **Unpackaged:** the classic mechanism, an `HKCU\...\Run` registry key or a
+  shortcut in the user's Startup folder.
+- **Packaged (MSIX):** those two mechanisms **stop working** for packaged apps.
+  The correct model is the `StartupTask` extension declared in
+  `AppxManifest.xml`
   (`<desktop:Extension><desktop:StartupTask TaskId="..." Enabled="..."
-  DisplayName="..." /></desktop:Extension>`), disponível desde o
-  Windows 10 Anniversary Update para apps Desktop Bridge. O utilizador
-  vê e controla isto no Task Manager → separador "Arranque", tal como
-  qualquer outra app moderna
+  DisplayName="..." /></desktop:Extension>`), available since the Windows 10
+  Anniversary Update for Desktop Bridge apps. The user sees and controls it in
+  Task Manager → "Startup" tab, like any other modern app
   ([StartupTask Class](https://learn.microsoft.com/en-us/uwp/api/windows.applicationmodel.startuptask?view=winrt-26100),
   [Supporting "launch at startup" in a desktop app converted with the Desktop Bridge](https://learn.microsoft.com/en-us/archive/blogs/appconsult/supporting-launch-at-startup-in-a-desktop-app-converted-with-the-desktop-bridge)).
-  Isto é uma mudança de implementação, não um bloqueador.
+  This is an implementation change, not a blocker.
 
-**3. Que restrições existem para fechar processos de terceiros a
-partir de uma app packaged?**
+**3. What restrictions exist on closing third-party processes from a packaged
+app?**
 
-Nenhuma restrição *adicional* imposta pelo packaging em si, além do
-que já se aplica a qualquer processo Win32 não elevado: não é possível
-abrir/terminar processos que corram com integrity level mais alto
-(SYSTEM, protegidos) sem elevação — confirmado empiricamente igual nos
-dois modos. Isto é o âmbito de B0.2, a medir com apps reais (quantas caem em
-processos elevados).
+No *additional* restriction imposed by packaging itself, beyond what already
+applies to any non-elevated Win32 process: processes running at a higher
+integrity level (SYSTEM, protected) cannot be opened/terminated without
+elevation, confirmed empirically to be the same in both modes. This is the scope
+of B0.2, to be measured with real apps (how many fall into elevated processes).
 
-**4. Recomendação**
+**4. Recommendation**
 
-**Seguir MSIX (packaged) desde o início.** Trade-offs explícitos:
+**Use MSIX (packaged) from the start.** Explicit trade-offs:
 
-- **A favor:** caminho direto para a Microsoft Store (assinatura
-  gratuita, sem SmartScreen); nenhuma perda de
-  capacidade técnica encontrada nos testes acima; identidade de pacote
-  dá acesso a APIs úteis mais tarde (ex.: `ApplicationData` para
-  storage isolado, se desejado).
-- **Custos reais, não bloqueadores:**
-  - Arranque com o Windows exige `StartupTask` em vez do registo
-    simples — mais código de manifesto, mas bem documentado.
-  - Iteração local durante o desenvolvimento exige Developer Mode
-    ativo (ou um pacote assinado) para sideload — irrelevante em uso
-    normal via `dotnet run`/F5 no Visual Studio (que trata disto
-    automaticamente via *single-project MSIX*
+- **For:** a direct route to the Microsoft Store (free signing, no
+  SmartScreen); no loss of technical capability found in the tests above;
+  package identity gives access to useful APIs later (e.g. `ApplicationData`
+  for isolated storage, if wanted).
+- **Real costs, not blockers:**
+  - Starting with Windows requires `StartupTask` instead of the simple registry
+    key: more manifest code, but well documented.
+  - Local iteration during development requires Developer Mode (or a signed
+    package) for sideloading. This is irrelevant in normal use through
+    `dotnet run`/F5 in Visual Studio (which handles it automatically through
+    *single-project MSIX*
     ([Package your app using single-project MSIX](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/single-project-msix))),
-    só relevante para scripts de teste como este ADR.
-  - B0.4 (falsos positivos de antivírus) não foi testado aqui — o
-    binário de teste não foi distribuído nem executado fora desta
-    máquina; falso positivo de AV depende mais de reputação/assinatura
-    do que de packaged vs. unpackaged, e a assinatura da Store ajuda
-    aqui também.
-- **Não foi encontrada nenhuma evidência de que MSIX inviabilize
-  funcionalidade essencial.** Não há motivo para reabrir esta decisão
-  sem novo dado.
+    and only relevant for test scripts like the one in this ADR.
+  - B0.4 (antivirus false positives) was not tested here: the test binary was
+    neither distributed nor run on another machine. An AV false positive
+    depends more on reputation/signing than on packaged vs unpackaged, and
+    Store signing helps here too.
+- **No evidence was found that MSIX makes any essential functionality
+  impossible.** There is no reason to reopen this decision without new data.
 
-## Fontes
+## Sources
 
 - [MSIX containerization overview — Microsoft Learn](https://learn.microsoft.com/en-us/windows/msix/msix-containerization-overview)
 - [Understanding how packaged desktop apps run on Windows — Microsoft Learn](https://learn.microsoft.com/en-us/windows/msix/desktop/desktop-to-uwp-behind-the-scenes)
@@ -152,19 +141,18 @@ processos elevados).
 - [Supporting "launch at startup" in a desktop app converted with the Desktop Bridge — Microsoft Learn](https://learn.microsoft.com/en-us/archive/blogs/appconsult/supporting-launch-at-startup-in-a-desktop-app-converted-with-the-desktop-bridge)
 - [Package your app using single-project MSIX — Microsoft Learn](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/single-project-msix)
 - [Windows App SDK deployment guide for framework-dependent packaged apps — Microsoft Learn](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/deploy-packaged-apps)
-- Teste empírico: `PkgSpike` (não versionado; resultados brutos citados
-  na tabela acima, capturados em 27–28 ago 2026).
+- Empirical test: `PkgSpike` (not versioned; raw results quoted in the table
+  above, captured on 27–28 Aug 2026).
 
-## Consequências
+## Consequences
 
-- `Statehop.App` é criado como projeto WinUI 3 com
-  *single-project MSIX packaging* habilitado por defeito
-  (`WindowsPackageType=Desktop`, `Package.appxmanifest` presente),
-  não `None`.
-- A app deve implementar o arranque com o Windows via
-  `StartupTask`, não via registo/Startup folder.
-- B0.2 (processos elevados) continua por medir com uso real — este ADR só mostra que a *causa* dessa restrição não é
-  o packaging.
-- O Developer Mode do Windows foi ativado na máquina de desenvolvimento
-  para permitir o teste; fica ativo — é um pré-requisito
-  normal para desenvolvimento WinUI3/MSIX local, não algo a reverter.
+- `Statehop.App` is created as a WinUI 3 project with *single-project MSIX
+  packaging* enabled by default (`WindowsPackageType=Desktop`,
+  `Package.appxmanifest` present), not `None`.
+- The app must implement starting with Windows through `StartupTask`, not
+  through the registry or the Startup folder.
+- B0.2 (elevated processes) still has to be measured with real use. This ADR
+  only shows that the *cause* of that restriction is not packaging.
+- Windows Developer Mode was enabled on the development machine to allow the
+  test; it stays on. It is a normal prerequisite for local WinUI 3/MSIX
+  development, not something to revert.

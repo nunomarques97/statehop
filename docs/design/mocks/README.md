@@ -1,63 +1,65 @@
-# Mocks — Phase 1, ecrã da timeline
+# Mocks — Phase 1, timeline screen
 
-Três direções para o ecrã principal da Phase 1.
+Three directions for the Phase 1 main screen.
 
-**Escolhida: A — Faixa do Dia**, a 6 set 2026. O sistema visual
-que saiu daí está em `DESIGN.md`. As direções B e C ficam como registo da
-decisão, não são para manter atualizadas.
+**Chosen: A — Day Strip** (*Faixa do Dia*), on 6 Sep 2026. The visual system
+that came out of it is in `DESIGN.md`. Directions B and C are kept as a record
+of the decision and are not maintained.
 
-A direção A foi depois revista com três alterações: o cabeçalho de três
-números veio da B, o texto de agrupamento de trocas curtas veio da B, e
-"Sem utilização" passou a ler mais leve do que atividade real.
+Direction A was then revised with three changes: the three-number header came
+from B, the text explaining how short switches are grouped came from B, and
+"No use" (*Sem utilização*) was made to read lighter than real activity.
 
-| Ficheiro | Direção | Screenshot |
+| File | Direction | Screenshot |
 |---|---|---|
-| `faixa-do-dia.html` | **A — Faixa do Dia** | `shots/faixa-do-dia.png`, `shots/faixa-do-dia-dark.png` |
-| `coluna-do-dia.html` | **B — Coluna do Dia** | `shots/coluna-do-dia.png`, `shots/coluna-do-dia-dark.png` |
-| `cartoes-de-contexto.html` | **C — Cartões de Contexto** | `shots/cartoes-de-contexto.png` |
+| `faixa-do-dia.html` | **A — Day Strip** | `shots/faixa-do-dia.png`, `shots/faixa-do-dia-dark.png` |
+| `coluna-do-dia.html` | **B — Day Column** | `shots/coluna-do-dia.png`, `shots/coluna-do-dia-dark.png` |
+| `cartoes-de-contexto.html` | **C — Context Cards** | `shots/cartoes-de-contexto.png` |
 
-Todas as capturas a **1180 × 820**, que é o tamanho real da janela. Há também
-uma verificação a 900 de largura (`shots/*-900.png`), porque a janela é
-redimensionável.
+All captures are at **1180 × 820**, the real window size. There is also a check
+at 900 wide (`shots/*-900.png`), because the window is resizable.
 
-**Nota de 7 set 2026:** os mocks usam seis variáveis de cor com nomes de
-categoria (`--app-code`, `--app-web`, …). Essa nomenclatura foi **substituída**
-no `DESIGN.md` por dez lugares neutros com atribuição estável por hash e
-reparação de vizinhança. O aspeto da direção A não muda; os nomes das variáveis
-no HTML ficam como estavam, porque o mock é o registo da decisão e não a fonte
-de verdade. A fonte de verdade é o `DESIGN.md`.
+**Note of 7 Sep 2026:** the mocks use six colour variables with category names
+(`--app-code`, `--app-web`, …). That naming was **replaced** in `DESIGN.md` by
+ten neutral slots with stable hash assignment and neighbourhood repair. The look
+of direction A does not change; the variable names in the HTML stay as they
+were, because the mock is the record of the decision, not the source of truth.
+The source of truth is `DESIGN.md`.
 
-O mock também assume **6 blocos**. Um dia real de uso dá **131**: é uma
-questão de densidade em aberto.
+The mock also assumes **6 blocks**. A real day of use gives **131**: an open
+question about density.
 
-## O que estes mocks decidem, e o que não decidem
+The mocks' interface copy is in Portuguese, the language of the app's current UI.
 
-**Decidem:** a organização da informação, a paleta e o que a cor codifica, a
-escala tipográfica, a densidade, e o elemento assinatura de cada direção.
+## What these mocks decide, and what they do not
 
-**Não decidem, e só a build real de WinUI 3 pode resolver:**
+**They decide:** the organisation of information, the palette and what colour
+encodes, the type scale, the density, and each direction's signature element.
 
-- **Materiais.** Mica e Acrylic são materiais do sistema, com amostragem do
-  fundo do ambiente de trabalho. Aqui estão aproximados por uma cor sólida.
-- **Cor de destaque do sistema.** O Windows deixa o utilizador escolher a sua;
-  os mocks usam um azul fixo. Na app real, o marcador de "agora" deve seguir a
-  cor de destaque do sistema.
-- **Tipos de letra.** Segoe UI Variable tem eixos óticos que o Chrome não
-  aplica da mesma maneira que o XAML.
-- **Barras de deslocamento, foco de teclado, animações de entrada, contraste
-  elevado e leitores de ecrã.** Tudo isso é comportamento de controlo nativo.
+**They do not decide, and only the real WinUI 3 build can settle:**
 
-Os dados são realistas mas **compostos**: as apps são comuns, o dia não é um
-dia real.
+- **Materials.** Mica and Acrylic are system materials that sample the desktop
+  background. Here they are approximated with a solid colour.
+- **System accent colour.** Windows lets the user choose their own; the mocks
+  use a fixed blue. In the real app the "now" marker should follow the system
+  accent colour.
+- **Typefaces.** Segoe UI Variable has optical axes that Chrome does not apply
+  the same way XAML does.
+- **Scroll bars, keyboard focus, entrance animations, high contrast and screen
+  readers.** All of that is native control behaviour.
 
-## Regras que estas direções já respeitam
+The data is realistic but **composed**: the apps are common ones, and the day is
+not a real day.
 
-De `DESIGN.md` (regras de produto, já fechadas):
+## Rules these directions already follow
 
-- O dia inteiro cabe **sem scroll**.
-- A cor **só codifica significado**: qual app, ausência de utilização, "agora".
-  Nenhuma cor decorativa.
-- Sem gráficos, sem pontuações, sem comparações, sem linguagem de IA.
-- Sem enquadramento de instrumento ou de profiler.
-- O diagnóstico da Phase 0 vive numa **afordância discreta** na barra de estado.
-- Claro e escuro, ambos.
+From `DESIGN.md` (product rules, already closed):
+
+- The whole day fits **without scrolling**.
+- Colour **only encodes meaning**: which app, absence of use, "now". No
+  decorative colour.
+- No charts, no scores, no comparisons, no AI language.
+- No instrument or profiler framing.
+- The Phase 0 diagnostics live behind a **discreet affordance** in the status
+  bar.
+- Light and dark, both.

@@ -1,284 +1,285 @@
 # DESIGN — Statehop
 
-**Direção escolhida:** **A — Faixa do Dia**, a 6 set 2026.
-Mock e capturas: `docs/design/mocks/faixa-do-dia.html` e
+**Chosen direction:** **A — Day Strip**, on 6 Sep 2026.
+Mock and captures: `docs/design/mocks/faixa-do-dia.html` and
 `docs/design/mocks/shots/`.
 
-Razão da escolha, para se construir a intenção e não a imagem: **a faixa
-responde a "onde é que foi o meu dia" numa só leitura, antes de qualquer texto
-ser processado** — forma, proporção e a interrupção veem-se ao mesmo tempo. E
-escala: é a mesma faixa com 6 blocos ou com 40.
+Why it was chosen, so the intent is built rather than the picture: **the strip
+answers "where did my day go" in a single reading, before any text is
+processed**: shape, proportion and interruptions are all visible at once. And it
+scales: it is the same strip with 6 blocks or with 40.
 
-Todo o trabalho de UI segue este ficheiro.
+All UI work follows this file.
 
 ---
 
-# Parte 1 — Regras de produto (fechadas)
+# Part 1 — Product rules (closed)
 
-Estas ganham a qualquer consideração estética. Não se reabrem sem uma decisão explícita.
+These win over any aesthetic consideration. They are not reopened without an explicit decision.
 
-## 1. O Statehop nunca pode parecer vigilância
+## 1. Statehop must never look like surveillance
 
-O Statehop observa **tudo** o que o utilizador faz, o dia inteiro. O desenho tem
-de ler como **"isto é teu, e fica aqui"**, nunca como **"a tua atividade está
-a ser medida"**.
+Statehop observes **everything** the user does, all day long. The design has
+to read as **"this is yours, and it stays here"**, never as **"your activity is
+being measured"**.
 
-- **O produto observa e ajuda. Não classifica o utilizador.** Nada de
-  pontuações de foco, produtivo-versus-improdutivo, streaks ou metas.
-- **Nenhuma comparação.** Nem com outros, nem com médias, nem com "a tua
-  semana passada" apresentada como julgamento. Não há cloud e não vai haver.
-- **Nada pode sugerir que os dados saem da máquina.** Na dúvida, o ecrã di-lo:
-  *"só nesta máquina"*.
-- **Nenhuma linguagem de IA em lado nenhum da interface.** IA é implementação,
-  não posicionamento (`docs/PRODUCT.md`).
-- **Enquadramento de instrumento é proibido.** Vistas tipo profiler, "tracks",
-  telemetria — mesmo tecnicamente elegantes — leem como vigilância.
+- **The product observes and helps. It does not grade the user.** No focus
+  scores, productive-versus-unproductive, streaks or goals.
+- **No comparison.** Not with other people, not with averages, and not with
+  "your last week" presented as a judgement. There is no cloud and there will
+  not be one.
+- **Nothing may suggest that data leaves the machine.** When in doubt, the
+  screen says so: *"only on this machine"*.
+- **No AI language anywhere in the interface.** AI is implementation, not
+  positioning (`docs/PRODUCT.md`).
+- **Instrument framing is forbidden.** Profiler-style views, "tracks",
+  telemetry: however technically elegant, they read as surveillance.
 
-Porquê, em concreto: o público-alvo são power users que **já rejeitaram o
-RescueTime exatamente por isto** (queixas de transparência e privacidade), e a
-resposta é a via *"local-first + extremamente simples + ação concreta"*.
+Why, concretely: the target audience is power users who **already rejected
+RescueTime for exactly this reason** (complaints about transparency and
+privacy), and the answer is the *"local-first + extremely simple + concrete
+action"* route.
 
-## 2. O dia inteiro cabe sem scroll
+## 2. The whole day fits without scrolling
 
-O trabalho do ecrã principal é responder em dez segundos a *"onde é que foi o
-meu dia"*. Um dia de trabalho completo cabe na janela **sem scroll**.
+The main screen's job is to answer *"where did my day go"* in ten seconds. A
+full working day fits in the window **without scrolling**.
 
-Daqui vem a densidade, e a densidade vem da disciplina de instrumento **sem** o
-enquadramento de instrumento.
+That is where the density comes from, and the density comes from instrument
+discipline **without** the instrument framing.
 
-## 3. A cor só codifica significado, nunca decora
+## 3. Colour only encodes meaning, it never decorates
 
-Se uma cor não distingue **uma app**, **uma ausência** ou **o "agora"**, não
-entra. Não há cor de marca aplicada a superfícies, não há gradientes, não há
-realces decorativos.
+If a colour does not distinguish **an app**, **an absence** or **"now"**, it
+does not go in. No brand colour applied to surfaces, no gradients, no
+decorative highlights.
 
-## 4. Nativo do Windows 11, claro e escuro
+## 4. Native to Windows 11, light and dark
 
-Tom: **calmo, preciso, nativo**. Deve parecer parte do Windows 11, não uma
-página web dentro de uma janela. O tema claro **não** é uma reflexão tardia.
+Tone: **calm, precise, native**. It should feel like part of Windows 11, not a
+web page inside a window. The light theme is **not** an afterthought.
 
-## 5. O wording das sugestões é probabilístico
+## 5. Suggestions are worded probabilistically
 
-*"O Docker parece pouco provável de ser necessário neste contexto"*, nunca
-*"O Docker está inativo, é seguro fechar"*. Inatividade não é inutilidade
+*"Docker appears unlikely to be needed in this context"*, never
+*"Docker is inactive, it is safe to close"*. Inactivity is not uselessness
 (`docs/PRODUCT.md`).
 
 ---
 
-# Parte 2 — Sistema visual (direção A)
+# Part 2 — Visual system (direction A)
 
-## Cores
+## Colours
 
-Papéis, não nomes de cor. Os valores abaixo são o ponto de partida; o que é
-vinculativo são os **papéis** e a regra 3.
+Roles, not colour names. The values below are the starting point; what is
+binding are the **roles** and rule 3.
 
-| Token | Papel | Claro | Escuro |
+| Token | Role | Light | Dark |
 |---|---|---|---|
-| `surface` | Fundo da janela (onde o Mica assenta) | `#F9F9F9` | `#1F1F1F` |
-| `layer` | Cartões e listas | `#FFFFFF` | `#2B2B2B` |
-| `layer-alt` | Sulcos, fundo da faixa, estados hover | `#F3F3F3` | `#262626` |
-| `stroke` | Contornos e separadores | `#E5E5E5` | `#383838` |
-| `stroke-strong` | Contorno de ênfase | `#D2D2D2` | `#4A4A4A` |
-| `text` | Texto principal | `#1B1B1B` | `#F2F2F2` |
-| `text-2` | Secundário: datas, "com X", rótulos | `#5D5D5D` | `#B8B8B8` |
-| `text-3` | Terciário: eixo, notas, **ausência** | `#8A8A8A` | `#8A8A8A` |
-| `accent` | **Só** o marcador de "agora" | `#0F6CBD` | `#4CC2FF` |
+| `surface` | Window background (where Mica sits) | `#F9F9F9` | `#1F1F1F` |
+| `layer` | Cards and lists | `#FFFFFF` | `#2B2B2B` |
+| `layer-alt` | Grooves, strip background, hover states | `#F3F3F3` | `#262626` |
+| `stroke` | Outlines and separators | `#E5E5E5` | `#383838` |
+| `stroke-strong` | Emphasis outline | `#D2D2D2` | `#4A4A4A` |
+| `text` | Main text | `#1B1B1B` | `#F2F2F2` |
+| `text-2` | Secondary: dates, "with X", labels | `#5D5D5D` | `#B8B8B8` |
+| `text-3` | Tertiary: axis, notes, **absence** | `#8A8A8A` | `#8A8A8A` |
+| `accent` | **Only** the "now" marker | `#0F6CBD` | `#4CC2FF` |
 
-### Paleta das apps
+### App palette
 
-**Contradição resolvida a 7 set 2026.** A versão anterior tinha nomes de
-categoria (`app-code`, `app-web`, …) e ao mesmo tempo uma regra de atribuição
-por hash. As duas coisas não podem coexistir: sob um hash, o PokerStars cai em
-`app-code`. Decisão: **nomes neutros de lugar, atribuição estável por hash.**
-Classificar por categoria obrigaria a manter uma tabela de apps para sempre e
-falharia em tudo o que fosse desconhecido — que nesta máquina é quase tudo.
+**Contradiction resolved on 7 Sep 2026.** The previous version had category
+names (`app-code`, `app-web`, …) and at the same time a hash-based assignment
+rule. The two cannot coexist: under a hash, PokerStars lands in `app-code`.
+Decision: **neutral slot names, stable hash assignment.** Classifying by
+category would mean maintaining a table of apps forever, and it would fail on
+everything unknown, which on a typical machine is almost everything.
 
-Dez lugares, dessaturados de propósito e ordenados para que lugares
-**consecutivos** também sejam distintos entre si (a reparação abaixo anda para
-o lugar seguinte, por isso lugares vizinhos aparecem juntos com frequência).
+Ten slots, deliberately desaturated and ordered so that **consecutive** slots
+are also distinct from each other (the repair below moves to the next slot, so
+neighbouring slots often appear together).
 
-| Token | Claro | Escuro | |
+| Token | Light | Dark | |
 |---|---|---|---|
-| `app-1` | `#3F6B8A` | `#6A9EC0` | azul |
-| `app-2` | `#A8794F` | `#CFA274` | laranja queimado |
-| `app-3` | `#4F8A7B` | `#6FB8A5` | verde-azulado |
-| `app-4` | `#96566B` | `#C98098` | malva |
-| `app-5` | `#7C6AA8` | `#A394D0` | violeta |
-| `app-6` | `#7A8290` | `#98A2B2` | cinzento-azulado |
-| `app-7` | `#A85F4F` | `#CF8A74` | terracota |
-| `app-8` | `#3F7F8A` | `#6AB4C0` | ciano |
-| `app-9` | `#5A6BA8` | `#8494D0` | índigo |
-| `app-10` | `#6F8A4F` | `#9BBA74` | azeitona |
-| `idle` | `#DCDCDC` | `#3A3A3A` | ausência — nunca é um lugar de app |
+| `app-1` | `#3F6B8A` | `#6A9EC0` | blue |
+| `app-2` | `#A8794F` | `#CFA274` | burnt orange |
+| `app-3` | `#4F8A7B` | `#6FB8A5` | teal |
+| `app-4` | `#96566B` | `#C98098` | mauve |
+| `app-5` | `#7C6AA8` | `#A394D0` | violet |
+| `app-6` | `#7A8290` | `#98A2B2` | blue-grey |
+| `app-7` | `#A85F4F` | `#CF8A74` | terracotta |
+| `app-8` | `#3F7F8A` | `#6AB4C0` | cyan |
+| `app-9` | `#5A6BA8` | `#8494D0` | indigo |
+| `app-10` | `#6F8A4F` | `#9BBA74` | olive |
+| `idle` | `#DCDCDC` | `#3A3A3A` | absence — never an app slot |
 
-**1. Atribuição base: hash estável do nome normalizado.** FNV-1a do
-`AppKey` (`AppNormalizer`), módulo 10. Estável entre sessões, entre dias e
-entre máquinas: o utilizador aprende as cores do seu dia.
+**1. Base assignment: a stable hash of the normalised name.** FNV-1a of the
+`AppKey` (`AppNormalizer`), modulo 10. Stable across sessions, days and
+machines: the user learns the colours of their day.
 
-> **Armadilha de implementação:** não usar `string.GetHashCode()`. Em .NET é
-> aleatorizado por processo, por isso as cores mudavam **a cada arranque da
-> app** — exatamente o defeito que esta regra existe para evitar.
+> **Implementation trap:** do not use `string.GetHashCode()`. In .NET it is
+> randomised per process, so colours would change **on every app start**,
+> which is exactly the defect this rule exists to prevent.
 
-**2. Reparação de vizinhança.** Requisito: *dentro de um dia, cada app
-com bloco visível tem de ser distinguível das suas vizinhas*. Só mais lugares
-não chega — medido, ver abaixo. Por isso:
+**2. Neighbourhood repair.** Requirement: *within a day, every app with a
+visible block must be distinguishable from its neighbours*. More slots alone
+are not enough, as measured below. Therefore:
 
-- As apps do dia com bloco são ordenadas por **tempo total, decrescente**.
-- Cada uma fica no seu lugar de hash. Se esse lugar já estiver ocupado por uma
-  app com que **é vizinha na faixa**, anda para o lugar seguinte livre.
-- Como se percorre por tempo, **as apps dominantes nunca se mexem** — são
-  precisamente aquelas cuja cor o utilizador decora.
+- The day's apps that have a block are ordered by **total time, descending**.
+- Each takes its hash slot. If that slot is already taken by an app it
+  **neighbours on the strip**, it moves to the next free slot.
+- Because the walk is by time, **the dominant apps never move**: they are
+  precisely the ones whose colour the user memorises.
 
-**Porque é que isto é garantido e não uma probabilidade:** na faixa cada bloco
-toca no máximo dois blocos, e a reparação só tem de fugir aos vizinhos já
-colocados. Havendo mais lugares do que o grau máximo de adjacência do dia,
-existe sempre lugar livre. No dia real de 6 set o grau máximo foi **8**, contra
-10 lugares.
+**Why this is guaranteed and not a probability:** on the strip each block
+touches at most two blocks, and the repair only has to avoid neighbours already
+placed. As long as there are more slots than the day's maximum adjacency degree,
+there is always a free slot. On the real day of 6 Sep the maximum degree was
+**8**, against 10 slots.
 
-**3. Costura na faixa.** Entre segmentos há um fio de 1 px em `surface`. É a
-rede de segurança estrutural: mesmo que um dia patológico esgote os lugares,
-dois segmentos vizinhos **nunca leem como um só bloco**, que é o que atacava a
-leitura de proporção. Se não houver lugar livre, a app fica no lugar de hash e
-a costura resolve o resto.
+**3. Seam on the strip.** Between segments there is a 1 px line in `surface`.
+It is the structural safety net: even if a pathological day exhausts the slots,
+two neighbouring segments **never read as a single block**, which is what broke
+the reading of proportion. If no free slot exists, the app keeps its hash slot
+and the seam handles the rest.
 
-**Medido num dia real de uso** (6 set 2026, 1 862 eventos de foreground,
-131 blocos, 21 apps observadas, **13 com bloco**):
+**Measured on a real day of use** (6 Sep 2026, 1,862 foreground events, 131
+blocks, 21 apps observed, **13 with a block**):
 
-| | 8 lugares | 10 lugares | 12 lugares |
+| | 8 slots | 10 slots | 12 slots |
 |---|---|---|---|
-| Apps que mudam de lugar | 4 de 13 | **2 de 13** | 1 de 13 |
-| Pares adjacentes com a mesma cor | 0 | **0** | 0 |
+| Apps that change slot | 4 of 13 | **2 of 13** | 1 of 13 |
+| Adjacent pairs with the same colour | 0 | **0** | 0 |
 
-Sem reparação, e só a aumentar lugares, sobravam pares adjacentes iguais em
-**todas** as contagens testadas (6, 8, 10, 12, 14 e 16 lugares). É por isso que
-a reparação existe: mais cor é probabilidade, a reparação é garantia.
+Without repair, only increasing slots, same-colour adjacent pairs remained in
+**every** count tested (6, 8, 10, 12, 14 and 16 slots). That is why the repair
+exists: more colour is a probability, the repair is a guarantee.
 
-**Escolha: 10 lugares.** Doze reduziria os movimentos a um, mas doze cores
-dessaturadas deixam de ser distinguíveis entre si, o que troca um problema
-resolvido por outro pior.
+**Choice: 10 slots.** Twelve would reduce moves to one, but twelve desaturated
+colours stop being distinguishable from each other, which trades a solved
+problem for a worse one.
 
-**Custo residual, assumido:** uma app pode mudar de cor entre dias **se e só
-se** colidir com uma vizinha nova. Na prática as apps de topo são estáveis, e
-foram essas que a ordenação protegeu. A alternativa — estabilidade perfeita com
-duplicados adjacentes ocasionais — foi rejeitada porque o requisito é o
-da adjacência.
+**Accepted residual cost:** an app can change colour between days **if and
+only if** it collides with a new neighbour. In practice the top apps are
+stable, and those are the ones the ordering protects. The alternative, perfect
+stability with occasional adjacent duplicates, was rejected because the
+requirement is about adjacency.
 
-**As apps sem bloco não recebem cor.** O cabeçalho anuncia 21 apps, mas só 13
-tiveram bloco. São números diferentes de propósito: só o segundo precisa de ser
-colorido, e é isso que torna o problema tratável.
+**Apps without a block get no colour.** The header announces 21 apps, but only
+13 had a block. The numbers differ on purpose: only the second needs colour,
+and that is what makes the problem tractable.
 
-**A paleta não é semântica.** Nenhuma cor quer dizer "bom" ou "mau". Verde não
-é produtivo, vermelho não é desperdício. Isto é a regra de produto 1 aplicada à
-paleta.
+**The palette is not semantic.** No colour means "good" or "bad". Green is not
+productive, red is not waste. This is product rule 1 applied to the palette.
 
-## Tipografia
+## Typography
 
-Segoe UI Variable, que é a família do sistema no Windows 11.
+Segoe UI Variable, the system family on Windows 11.
 
-| Papel | Família | Tamanho | Peso |
+| Role | Family | Size | Weight |
 |---|---|---|---|
-| Título do dia | Segoe UI Variable **Display** | 28 | 600 |
-| Números do cabeçalho | Segoe UI Variable Text | 17 | 600 |
-| Cabeçalho de secção | Segoe UI Variable Text | 14 | 600 |
-| Corpo, linhas de lista | Segoe UI Variable Text | 14 | 400 |
-| Secundário, rótulos | Segoe UI Variable Text | 12–13 | 400 |
-| Eixo, notas | Segoe UI Variable Text | 11 | 400 |
+| Day title | Segoe UI Variable **Display** | 28 | 600 |
+| Header numbers | Segoe UI Variable Text | 17 | 600 |
+| Section header | Segoe UI Variable Text | 14 | 600 |
+| Body, list rows | Segoe UI Variable Text | 14 | 400 |
+| Secondary, labels | Segoe UI Variable Text | 12–13 | 400 |
+| Axis, notes | Segoe UI Variable Text | 11 | 400 |
 
-**Todos os números que se comparam usam algarismos tabulares**
-(`font-variant-numeric: tabular-nums`; em XAML, a *feature* OpenType `tnum`).
-Durações e horas alinham em coluna ou não se conseguem ler de relance.
+**Every number that is compared uses tabular figures**
+(`font-variant-numeric: tabular-nums`; in XAML, the OpenType `tnum` feature).
+Durations and times line up in a column or they cannot be read at a glance.
 
-## Espaçamento
+## Spacing
 
-Escala de 4: **4, 8, 12, 16, 24, 32**. Nada fora dela.
-Margem da janela: 32 horizontal, 8 no topo (a barra de título já dá ar).
+A scale of 4: **4, 8, 12, 16, 24, 32**. Nothing outside it.
+Window margin: 32 horizontal, 8 at the top (the title bar already gives room).
 
-## Raios
+## Radii
 
-Três valores, no máximo: **4** (elementos pequenos, amostras de cor), **6**
-(faixa, botões), **8** (cartões e listas).
+Three values at most: **4** (small elements, colour swatches), **6** (strip,
+buttons), **8** (cards and lists).
 
-## O elemento assinatura: a faixa do dia
+## The signature element: the day strip
 
-- Altura **84 px**, raio 6, cantos cortados (`overflow: hidden`).
-- Fundo `layer-alt`: o sulco tem de se ver mesmo antes de haver dados.
-- Um segmento por bloco contíguo, largura **proporcional à duração**. Sem
-  largura mínima: um bloco de dois minutos deve **parecer** dois minutos.
-- **Costura de 1 px em `surface` entre segmentos.** Dois blocos vizinhos nunca
-  podem ler como um só — ver a regra de reparação da paleta.
-- Ausência de utilização é um segmento `idle` — presente, não um buraco.
-- Eixo por baixo, de hora a hora, em `text-3`, 11 px, tabular.
-- **Marcador de "agora":** régua vertical de 2 px em `accent`, a transbordar
-  6 px acima e abaixo da faixa, com o rótulo *agora* por baixo, alinhado à
-  direita da régua. É o único uso de `accent` no ecrã.
+- Height **84 px**, radius 6, clipped corners (`overflow: hidden`).
+- `layer-alt` background: the groove must be visible even before there is data.
+- One segment per contiguous block, width **proportional to duration**. No
+  minimum width: a two-minute block must **look** like two minutes.
+- **1 px seam in `surface` between segments.** Two neighbouring blocks can
+  never read as one; see the palette repair rule.
+- Absence of use is an `idle` segment: present, not a hole.
+- Axis underneath, hour by hour, in `text-3`, 11 px, tabular.
+- **"Now" marker:** a 2 px vertical rule in `accent`, overhanging the strip by
+  6 px above and below, with the label *now* underneath, right-aligned to the
+  rule. It is the only use of `accent` on the screen.
 
-## Estados
+## States
 
-| Estado | Como se lê |
+| State | How it reads |
 |---|---|
-| **Atividade** | `text` a 400, cor da app na amostra, duração em `text` |
-| **Ausência** (`Sem utilização`) | **Tudo em `text-3`**, incluindo hora e duração. Sem fundo diferente. É ausência, não um evento: **recua**, não se destaca. Um preenchimento chamaria mais atenção, não menos. |
-| **A decorrer** | Termina em *"— agora"* em vez de uma hora de fim. Sem badge, sem pulsar. |
-| **Sem dados ainda** | A faixa aparece vazia com o sulco visível e uma linha em `text-2`. Nunca um *spinner*: a app está a observar, não a carregar. |
+| **Activity** | `text` at 400, the app's colour on the swatch, duration in `text` |
+| **Absence** (`No use`) | **Everything in `text-3`**, including time and duration. No different background. It is an absence, not an event: it **recedes**, it does not stand out. A fill would draw more attention, not less. |
+| **In progress** | Ends with *"— now"* instead of an end time. No badge, no pulsing. |
+| **No data yet** | The strip appears empty with the groove visible and one line in `text-2`. Never a *spinner*: the app is observing, not loading. |
 
-## Movimento
+## Motion
 
-Um momento assinatura por ecrã, e neste ecrã é **o marcador de "agora" a
-avançar**. Mais nada anima por defeito.
+One signature moment per screen, and on this screen it is **the "now" marker
+moving forward**. Nothing else animates by default.
 
-- Sem animação de entrada de listas. As linhas novas aparecem; não deslizam.
-- Sem *fade* na faixa a cada atualização.
-- Respeitar sempre a definição do sistema de **reduzir movimento**.
+- No entrance animation for lists. New rows appear; they do not slide.
+- No *fade* on the strip at each update.
+- Always respect the system's **reduce motion** setting.
 
-## Faz / não faz
+## Do / don't
 
-**Faz**
-- Diz *"só nesta máquina"* onde o utilizador possa ter dúvida.
-- Distingue **"ao computador"** de **"com utilização"**. São números
-  diferentes, e dar só o primeiro inflacionaria o dia.
-- Explica as próprias agregações em texto simples, junto do que agregam
-  (ex.: *"Trocas de foco com menos de um minuto ficam agrupadas no bloco onde
-  aconteceram."*).
-- Põe o diagnóstico da Phase 0 atrás de uma **afordância discreta** na barra de
-  estado.
+**Do**
+- Say *"only on this machine"* wherever the user might wonder.
+- Distinguish **"at the computer"** from **"in use"**. They are different
+  numbers, and giving only the first would inflate the day.
+- Explain its own aggregations in plain text, next to what they aggregate
+  (e.g. *"Focus switches shorter than a minute are grouped into the block
+  where they happened."*).
+- Put the Phase 0 diagnostics behind a **discreet affordance** in the status
+  bar.
 
-**Não faz**
-- Gráficos de fatias, sectores, KPIs em mosaico, medidores.
-- Pontuações, metas, streaks, comparações.
-- Emoji como ícones.
-- Cartões dentro de cartões.
-- Cor sem significado.
-- A palavra "IA" ou equivalentes em qualquer parte da interface.
+**Don't**
+- Pie charts, sectors, KPI tiles, gauges.
+- Scores, goals, streaks, comparisons.
+- Emoji as icons.
+- Cards inside cards.
+- Colour without meaning.
+- The word "AI" or equivalents anywhere in the interface.
 
 ---
 
-# Parte 3 — O que só a build real de WinUI 3 pode resolver
+# Part 3 — What only the real WinUI 3 build can settle
 
-Os mocks são HTML. Decidem organização, paleta, tipografia, densidade e o
-elemento assinatura. **Não** decidem o seguinte, e nenhuma destas linhas deve
-ser tratada como fechada até existir uma captura da app a correr:
+The mocks are HTML. They decide organisation, palette, typography, density and
+the signature element. They do **not** decide the following, and none of these
+lines should be treated as closed until there is a capture of the running app:
 
-- **Mica e Acrylic.** São materiais do sistema, com amostragem do fundo do
-  ambiente de trabalho. `surface` nos mocks é uma cor sólida a aproximá-los. Na
-  app real, a janela deve usar **Mica**, e os cartões ficam por cima dele.
-- **Cor de destaque do sistema.** O Windows deixa o utilizador escolher a sua.
-  O marcador de "agora" deve **seguir a cor de destaque do sistema**, não o
-  azul fixo dos mocks. O valor de `accent` na tabela é apenas o *fallback*.
-- **Barras de deslocamento.** São controlo nativo, com o comportamento de
-  sobreposição do Windows 11. Não estilizar.
-- **Foco de teclado.** O anel de foco do WinUI, a ordem de tabulação e o acesso
-  à faixa por teclado não existem nos mocks. A faixa **tem** de ser navegável
-  por teclado, e cada bloco tem de ter nome acessível.
-- **Contraste elevado.** Nesse modo, a paleta categórica é substituída pelas
-  cores do sistema e a distinção entre apps passa a depender de texto, não de
-  cor. Verificar antes de dar a Phase 1 por fechada.
-- **Tema claro.** Verificar na máquina, não no mock: o Mica claro e o
-  `layer` branco têm menos contraste entre si do que a aproximação sólida
-  sugere.
-- **Tipografia.** Segoe UI Variable tem eixos óticos que o navegador não aplica
-  como o XAML.
+- **Mica and Acrylic.** They are system materials that sample the desktop
+  background. `surface` in the mocks is a solid colour approximating them. In
+  the real app the window should use **Mica**, with the cards on top of it.
+- **System accent colour.** Windows lets the user choose their own. The "now"
+  marker should **follow the system accent colour**, not the fixed blue of the
+  mocks. The `accent` value in the table is only the *fallback*.
+- **Scroll bars.** They are a native control, with Windows 11's overlay
+  behaviour. Do not style them.
+- **Keyboard focus.** The WinUI focus ring, tab order and keyboard access to
+  the strip do not exist in the mocks. The strip **must** be keyboard
+  navigable, and every block must have an accessible name.
+- **High contrast.** In that mode the categorical palette is replaced by system
+  colours, and telling apps apart relies on text, not colour. Check before
+  calling Phase 1 closed.
+- **Light theme.** Check on the machine, not on the mock: light Mica and a white
+  `layer` have less contrast between them than the solid approximation
+  suggests.
+- **Typography.** Segoe UI Variable has optical axes that the browser does not
+  apply the way XAML does.
 
-**Definition of done de qualquer alteração de UI:** captura da **app a correr**
-em claro e escuro, criticada contra este ficheiro, corrigida e recapturada. Um
-build verde não é prova de que a UI existe — foi assim que se apanharam três
-bugs reais na Phase 0.
+**Definition of done for any UI change:** a capture of the **running app** in
+light and dark, critiqued against this file, fixed and recaptured. A green
+build is not proof that the UI exists; that is how three real bugs were caught
+in Phase 0.

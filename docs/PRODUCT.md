@@ -1,126 +1,122 @@
 # PRODUCT — Statehop
 
-## Posicionamento
+## Positioning
 
-> **Windows que se adapta ao que estás a fazer.**
+> **Windows that adapts to what you are doing.**
 
-Alternativas de tagline: *"Switch context. Your PC adapts."* /
+Alternative taglines: *"Switch context. Your PC adapts."* /
 *"Switch contexts, not windows."*
 
-Não posicionar como "AI-powered Windows productivity assistant" —
-genérico e já ocupado por Copilot/Recall. IA é implementação, não
-posicionamento.
+Do not position it as an "AI-powered Windows productivity assistant": generic,
+and already taken by Copilot/Recall. AI is implementation, not positioning.
 
-## Categoria
+## Category
 
-Context-aware Windows utility. Não é "workspace manager" (PowerToys já
-domina isso de graça) nem "AI desktop assistant" (Microsoft está a
-construir isso na própria plataforma — Recall/Click to Do).
+Context-aware Windows utility. It is not a "workspace manager" (PowerToys
+already dominates that for free), nor an "AI desktop assistant" (Microsoft is
+building that into the platform itself: Recall/Click to Do).
 
-## Core loop do produto
+## Core product loop
 
 ```
 Observe → Understand (infer context) → Suggest → Learn → Act
 ```
 
-O sistema observa uso local, infere em que contexto o utilizador está,
-sugere ações (nunca executa destrutivamente sem aprovação), aprende com
-as decisões do utilizador, e só executa autonomamente ações seguras e
-já aprovadas.
+The system observes local usage, infers which context the user is in, suggests
+actions (never acting destructively without approval), learns from the user's
+decisions, and acts autonomously only on safe, already approved actions.
 
-## Utilizador-alvo (depois da Phase 5, se validar)
+## Target user (after Phase 5, if validated)
 
-Power users: developers, gamers, creators, traders/analysts, gente com
-muitos monitores, 20+ apps abertas, uso intensivo de teclado. Não
-"todo o utilizador Windows".
+Power users: developers, gamers, creators, traders/analysts, people with many
+monitors, 20+ open apps and heavy keyboard use. Not "every Windows user".
 
-## Concorrência (resumo)
+## Competition (summary)
 
-| Concorrente | O que faz | Porque não mata a tese |
+| Competitor | What it does | Why it does not kill the thesis |
 |---|---|---|
-| PowerToys Workspaces | Guarda/lança grupos de apps, grátis, 135k+ stars | Estático, requer configuração manual; sem inferência |
-| DisplayFusion ($34) | Perfis, hotkeys, scripts C#/VB.NET | "Configura tu próprio", não "eu descubro por ti" |
-| Actual Window Manager ($59.95) | Regras profundas de startup/janelas | Não decide sozinho quando aplicar uma regra |
-| ActivityWatch (grátis/OSS, 18.6k stars) | Observa atividade local | Só observa; não infere→sugere→age |
-| ManicTime ($7/mês) / RescueTime ($7–16/mês) | Time tracking automático | Dashboards/produtividade abstrata, não ação concreta |
-| AutoHotkey | Automação contextual poderosa | Exige scripting; nós vendemos zero-configuração |
-| Power Automate Desktop | Automação geral | Workflow builder pesado; nós não temos builder nenhum |
-| Raycast (Windows 2.0, ago 2026) | Launcher + AI layer | Valida a tese "camada inteligente utilizador↔PC", não é o mesmo produto |
-| Microsoft Recall / Click to Do | Memória local de atividade + ações | Valida a direção; risco estrutural de longo prazo — motivo para não demorar anos a validar |
+| PowerToys Workspaces | Saves/launches groups of apps, free, 135k+ stars | Static, needs manual setup; no inference |
+| DisplayFusion ($34) | Profiles, hotkeys, C#/VB.NET scripts | "Configure it yourself", not "I figure it out for you" |
+| Actual Window Manager ($59.95) | Deep startup/window rules | Does not decide on its own when to apply a rule |
+| ActivityWatch (free/OSS, 18.6k stars) | Observes local activity | Only observes; does not infer→suggest→act |
+| ManicTime ($7/month) / RescueTime ($7–16/month) | Automatic time tracking | Dashboards/abstract productivity, not concrete action |
+| AutoHotkey | Powerful contextual automation | Requires scripting; we sell zero configuration |
+| Power Automate Desktop | General automation | Heavy workflow builder; we have no builder at all |
+| Raycast (Windows 2.0, Aug 2026) | Launcher + AI layer | Validates the "smart user↔PC layer" thesis, not the same product |
+| Microsoft Recall / Click to Do | Local activity memory + actions | Validates the direction; a long-term structural risk and a reason not to take years to validate |
 
-## MVP — o que construir
+## MVP — what to build
 
 ```
-Local activity tracking (foreground app, processo, janela, idle, CPU/RAM)
-+ context timeline (visualização simples do dia)
-+ deteção automática de padrões (co-occurrence, clustering simples)
-+ criação/lançamento manual de workspace
-+ sugestões seguras de cleanup ("Docker parece não ser necessário agora")
-+ preferências persistentes (never suggest / never close / always keep)
-+ tray app, hotkey global, arranque com o Windows
+Local activity tracking (foreground app, process, window, idle, CPU/RAM)
++ context timeline (a simple view of the day)
++ automatic pattern detection (co-occurrence, simple clustering)
++ manual workspace creation/launch
++ safe cleanup suggestions ("Docker does not seem to be needed right now")
++ persistent preferences (never suggest / never close / always keep)
++ tray app, global hotkey, start with Windows
 ```
 
-## Fora de âmbito no MVP (não construir sem decisão explícita)
+## Out of scope for the MVP (not built without an explicit decision)
 
 ```
 Voice assistant
-Agente de IA totalmente autónomo
+Fully autonomous AI agent
 Screenshot recording / computer vision
-Monitorização de conteúdo do browser
-Conta / cloud / sync entre máquinas
-Colaboração em equipa
+Browser content monitoring
+Account / cloud / sync between machines
+Team collaboration
 Plugin marketplace
-Linguagem de scripting/macros complexa
-Controlo arbitrário do PC por LLM
-Fecho automático de processos sem regra aprovada
-Orquestração completa de virtual desktops
-App mobile / suporte multi-plataforma
-Integrações de calendário / Outlook / Gmail
-"AI everything" — IA só entra onde ambiguidade de linguagem justifica
+Complex scripting/macro language
+Arbitrary PC control by an LLM
+Automatic process closing without an approved rule
+Full virtual desktop orchestration
+Mobile app / multi-platform support
+Calendar / Outlook / Gmail integrations
+"AI everything": AI only where language ambiguity justifies it
 ```
 
-## Regra de IA
+## AI rule
 
-IA não deve ser introduzida antes da arquitetura determinística (Phases
-0–3) estar sólida. Quando entrar, só como classificador de intenção em
-linguagem natural, produzindo output estruturado (ex.:
+AI must not be introduced before the deterministic architecture (Phases 0–3)
+is solid. When it comes in, it is only a natural-language intent classifier
+producing structured output (e.g.
 `{"intent": "activate_workspace", "workspace": "Development",
-"confidence": 0.94}`), nunca ação direta sobre o sistema. Um motor de
-regras determinístico decide sempre o que fazer com essa intenção.
+"confidence": 0.94}`), never direct action on the system. A deterministic rules
+engine always decides what to do with that intent.
 
-## Regra crítica de UX
+## Critical UX rule
 
-**Inatividade não é equivalência a inutilidade.** Um processo com 0% de
-CPU pode ser essencial (ex.: Docker). O wording de qualquer sugestão de
-fecho deve ser probabilístico e reversível: *"Docker appears unlikely to
-be needed in your current context"*, nunca *"Docker is inactive, so it
-is safe to close"*.
+**Inactivity does not equal uselessness.** A process at 0% CPU can be essential
+(e.g. Docker). The wording of any closing suggestion must be probabilistic and
+reversible: *"Docker appears unlikely to be needed in your current context"*,
+never *"Docker is inactive, so it is safe to close"*.
 
-## Níveis de segurança de ações
+## Action safety levels
 
 ```
 Level 0 — Observe only
-Level 1 — Suggest (pergunta antes de agir)
-Level 2 — Auto-act em ações seguras (abrir/focar app, restaurar posição)
-Level 3 — Ações destrutivas (fechar apps) — requer autorização explícita
-Level 4 — Force-kill — nunca automático por defeito
+Level 1 — Suggest (asks before acting)
+Level 2 — Auto-act on safe actions (open/focus an app, restore a position)
+Level 3 — Destructive actions (closing apps) — requires explicit authorisation
+Level 4 — Force-kill — never automatic by default
 ```
 
-## Monetização (não é prioridade até Phase 5/6)
+## Monetisation (not a priority until Phase 5/6)
 
-Modelo a testar, só depois de validação pessoal:
+A model to test, only after personal validation:
 
-- **Free**: observer, context discovery, até 3 workspaces, sugestões
-  básicas.
-- **Pro — €19–29 one-time**: workspaces ilimitados, automação avançada,
-  preferências aprendidas, regras avançadas, IA local/cloud opcional.
-- **Eventual add-on cloud/AI/sync**: €3–5/mês, só com utilização real.
+- **Free**: observer, context discovery, up to 3 workspaces, basic
+  suggestions.
+- **Pro — €19–29 one-time**: unlimited workspaces, advanced automation,
+  learned preferences, advanced rules, optional local/cloud AI.
+- **Possible cloud/AI/sync add-on**: €3–5/month, only with real usage.
 
-Não validar preço nem construir pricing page antes da Phase 5.
+Do not validate pricing or build a pricing page before Phase 5.
 
-## Distribuição (só relevante pós-validação pessoal)
+## Distribution (relevant only after personal validation)
 
-Sem cold outreach: GitHub (issues/releases),
-comunidades onde o problema já se discute (r/Windows11, r/PowerToys,
-r/AutoHotkey, r/SideProject), Microsoft Store/winget quando estável,
-Product Hunt/HN quando houver demo forte. Sem paid ads.
+No cold outreach: GitHub (issues/releases), communities where the problem is
+already discussed (r/Windows11, r/PowerToys, r/AutoHotkey, r/SideProject),
+Microsoft Store/winget once stable, Product Hunt/HN once there is a strong
+demo. No paid ads.
