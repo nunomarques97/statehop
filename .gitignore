@@ -33,3 +33,17 @@ google-services.json
 credentials.json
 *token*
 *secret*
+
+# Local agent configuration and internal planning notes (kept on disk, never published)
+.claude/
+CLAUDE.md
+AGENTS.md
+HANDOFF-PROMPT.md
+docs/forja/
+docs/briefs/
+docs/evidence/
+docs/research/
+docs/STATE.md
+docs/BUDGET.md
+docs/DECISION.md
+docs/PLAN.md
