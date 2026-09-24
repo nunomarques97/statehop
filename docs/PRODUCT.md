@@ -120,7 +120,7 @@ Não validar preço nem construir pricing page antes da Phase 5.
 
 ## Distribuição (só relevante pós-validação pessoal)
 
-Canais: GitHub (issues/releases),
+Sem cold outreach: GitHub (issues/releases),
 comunidades onde o problema já se discute (r/Windows11, r/PowerToys,
 r/AutoHotkey, r/SideProject), Microsoft Store/winget quando estável,
 Product Hunt/HN quando houver demo forte. Sem paid ads.

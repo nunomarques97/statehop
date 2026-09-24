@@ -27,8 +27,8 @@ reparação de vizinhança. O aspeto da direção A não muda; os nomes das vari
 no HTML ficam como estavam, porque o mock é o registo da decisão e não a fonte
 de verdade. A fonte de verdade é o `DESIGN.md`.
 
-O mock também assume **6 blocos**. Um dia real de uso dá **131**: é uma questão
-de densidade em aberto.
+O mock também assume **6 blocos**. Um dia real de uso dá **131**: é uma
+questão de densidade em aberto.
 
 ## O que estes mocks decidem, e o que não decidem
 
@@ -47,8 +47,8 @@ escala tipográfica, a densidade, e o elemento assinatura de cada direção.
 - **Barras de deslocamento, foco de teclado, animações de entrada, contraste
   elevado e leitores de ecrã.** Tudo isso é comportamento de controlo nativo.
 
-Os dados são realistas mas **compostos**: as apps são as que o utilizador usa de
-facto, o dia não é literalmente o dia dele.
+Os dados são realistas mas **compostos**: as apps são comuns, o dia não é um
+dia real.
 
 ## Regras que estas direções já respeitam
 

@@ -15,7 +15,7 @@ Todo o trabalho de UI segue este ficheiro.
 
 # Parte 1 — Regras de produto (fechadas)
 
-Estas ganham a qualquer consideração estética. Não se reabrem sem decisão explícita.
+Estas ganham a qualquer consideração estética. Não se reabrem sem uma decisão explícita.
 
 ## 1. O Statehop nunca pode parecer vigilância
 
@@ -35,10 +35,8 @@ a ser medida"**.
   telemetria — mesmo tecnicamente elegantes — leem como vigilância.
 
 Porquê, em concreto: o público-alvo são power users que **já rejeitaram o
-RescueTime exatamente por isto**
-(investigação de mercado:
-queixas de transparência e privacidade, e a conclusão pela via *"local-first +
-extremamente simples + ação concreta"*).
+RescueTime exatamente por isto** (queixas de transparência e privacidade), e a
+resposta é a via *"local-first + extremamente simples + ação concreta"*.
 
 ## 2. O dia inteiro cabe sem scroll
 

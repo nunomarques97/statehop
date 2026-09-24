@@ -1,12 +1,11 @@
 # ADR 001 — Packaged (MSIX) vs unpackaged
 
-**Data:** 27–28 ago 2026
-**Blocking point:** B0.1
+**Data:** 27–28 ago 2026 · **Blocking point:** B0.1
 
 ## Contexto
 
-O orçamento estabelece que a Microsoft Store é a única via de
-distribuição assinada viável dentro do orçamento (€0, sem SmartScreen),
+A Microsoft Store é a única via de distribuição assinada viável sem
+custo (€0, sem SmartScreen),
 e a Store exige MSIX. Mas MSIX traz identidade de pacote e um modelo de
 "Desktop Bridge" que, historicamente, é confundido com o sandboxing
 UWP/AppContainer — daí a necessidade de decidir com evidência, não com
@@ -17,10 +16,10 @@ processos.
 ## Método
 
 Documentação oficial (Microsoft Learn) **+ teste mínimo empírico**
-nesta máquina (Windows 11 Home, build 26200, sessão não elevada):
+numa máquina de desenvolvimento (Windows 11 Home, build 26200, sessão não elevada):
 
-1. Escrita de uma app de consola .NET 10 (`PkgSpike`, fora do repo, em
-   `PkgSpike/`, descartável) que executa cinco verificações
+1. Escrita de uma app de consola .NET 10 (`PkgSpike`, fora do repo,
+   descartável) que executa cinco verificações
    via P/Invoke puro (sem WinUI, para isolar o efeito do packaging da
    stack de UI):
    - Identidade de pacote (`Windows.ApplicationModel.Package.Current`).
@@ -38,13 +37,13 @@ nesta máquina (Windows 11 Home, build 26200, sessão não elevada):
 3. Corrida **B — packaged**: empacotamento manual em MSIX
    (`AppxManifest.xml` com `rescap:Capability Name="runFullTrust"`,
    `EntryPoint="Windows.FullTrustApplication"`), assinado com um
-   certificado de teste autoassinado (gerado e removido nesta sessão),
+   certificado de teste autoassinado (gerado e removido no fim do teste),
    instalado via `Add-AppxPackage` com o Developer Mode do Windows
-   ativado para o efeito (ação confirmada antes de a
-   fazer — é uma alteração de sistema, não só instalação de SDK), e
+   ativado para o efeito (é uma alteração de sistema, não só instalação
+   de SDK), e
    executado diretamente a partir de
    `C:\Program Files\WindowsApps\<PackageFullName>\PkgSpike.exe`.
-4. Pacote de teste e certificado **removidos no fim** desta sessão
+4. Pacote de teste e certificado **removidos no fim** do teste
    (`Remove-AppxPackage`, remoção do certificado de
    `Cert:\LocalMachine\TrustedPeople` e `Cert:\CurrentUser\My`). Nada
    disto fica instalado na máquina.
@@ -73,7 +72,7 @@ SYSTEM/protegidos) ocorre **igualmente nos dois modos** — é uma questão
 de integrity level/ACL do processo alvo (relevante para B0.2, não para
 B0.1), não uma restrição imposta pelo MSIX.
 
-## Respostas às perguntas de partida
+## Respostas às perguntas
 
 **1. Uma app WinUI 3 packaged (MSIX) consegue enumerar processos de
 terceiros, ler a foreground window, detetar idle e registar hotkeys
@@ -105,8 +104,7 @@ não ao caso do Statehop.
   qualquer outra app moderna
   ([StartupTask Class](https://learn.microsoft.com/en-us/uwp/api/windows.applicationmodel.startuptask?view=winrt-26100),
   [Supporting "launch at startup" in a desktop app converted with the Desktop Bridge](https://learn.microsoft.com/en-us/archive/blogs/appconsult/supporting-launch-at-startup-in-a-desktop-app-converted-with-the-desktop-bridge)).
-  Isto é uma mudança de implementação a prever no spike da Phase 0, não um
-  bloqueador.
+  Isto é uma mudança de implementação, não um bloqueador.
 
 **3. Que restrições existem para fechar processos de terceiros a
 partir de uma app packaged?**
@@ -115,13 +113,12 @@ Nenhuma restrição *adicional* imposta pelo packaging em si, além do
 que já se aplica a qualquer processo Win32 não elevado: não é possível
 abrir/terminar processos que corram com integrity level mais alto
 (SYSTEM, protegidos) sem elevação — confirmado empiricamente igual nos
-dois modos. Isto é o âmbito de B0.2, a medir a sério no spike da Phase 0 com
-as apps reais do utilizador (quantas caem em processos elevados).
+dois modos. Isto é o âmbito de B0.2, a medir com apps reais (quantas caem em
+processos elevados).
 
 **4. Recomendação**
 
-**Seguir MSIX (packaged) desde o início**, confirmando a recomendação
-por defeito. Trade-offs explícitos:
+**Seguir MSIX (packaged) desde o início.** Trade-offs explícitos:
 
 - **A favor:** caminho direto para a Microsoft Store (assinatura
   gratuita, sem SmartScreen); nenhuma perda de
@@ -155,20 +152,19 @@ por defeito. Trade-offs explícitos:
 - [Supporting "launch at startup" in a desktop app converted with the Desktop Bridge — Microsoft Learn](https://learn.microsoft.com/en-us/archive/blogs/appconsult/supporting-launch-at-startup-in-a-desktop-app-converted-with-the-desktop-bridge)
 - [Package your app using single-project MSIX — Microsoft Learn](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/single-project-msix)
 - [Windows App SDK deployment guide for framework-dependent packaged apps — Microsoft Learn](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/deploy-packaged-apps)
-- Teste empírico: `PkgSpike/` (não versionado; resultados
-  brutos citados na tabela acima, capturados em 27–28 ago 2026).
+- Teste empírico: `PkgSpike` (não versionado; resultados brutos citados
+  na tabela acima, capturados em 27–28 ago 2026).
 
 ## Consequências
 
-- `Statehop.App` (Tarefa 4) é criado como projeto WinUI 3 com
+- `Statehop.App` é criado como projeto WinUI 3 com
   *single-project MSIX packaging* habilitado por defeito
   (`WindowsPackageType=Desktop`, `Package.appxmanifest` presente),
   não `None`.
-- O spike da Phase 0 deve implementar o arranque com o Windows via
+- A app deve implementar o arranque com o Windows via
   `StartupTask`, não via registo/Startup folder.
-- B0.2 (processos elevados) continua por medir a sério com o uso real
-  do utilizador — este ADR só mostra que a *causa* dessa restrição não é
+- B0.2 (processos elevados) continua por medir com uso real — este ADR só mostra que a *causa* dessa restrição não é
   o packaging.
-- Developer Mode do Windows foi ativado nesta máquina
+- O Developer Mode do Windows foi ativado na máquina de desenvolvimento
   para permitir o teste; fica ativo — é um pré-requisito
   normal para desenvolvimento WinUI3/MSIX local, não algo a reverter.
